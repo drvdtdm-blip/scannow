@@ -7,7 +7,7 @@ import ApiKeyModal from './components/ApiKeyModal';
 import { analyzeMedicalDocument, startDocumentChat } from './services/gemini';
 
 export default function App() {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY || '');
   const [isApiModalOpen, setIsApiModalOpen] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [activeDocId, setActiveDocId] = useState(null);
