@@ -150,7 +150,7 @@ export default function InsightsPanel({ reportData, chatSession, isAnalyzing, st
     );
   }
 
-  const { metadata, executiveSummary, detailedAnalysis, labMetrics, recommendations, dictionary } = reportData;
+  const { metadata, executiveSummary, diagnosis, detailedAnalysis, labMetrics, recommendations, dictionary } = reportData;
 
   const handleCopySummary = () => {
     const textToCopy = `
@@ -163,6 +163,9 @@ Facility: ${metadata.facilityName || 'N/A'}
 
 Clinical Brief:
 ${executiveSummary || 'N/A'}
+
+Clinical Diagnoses:
+${diagnosis?.map(d => `- ${d}`).join('\n') || 'None'}
 
 Key Metrics & Readings:
 ${labMetrics?.map(m => `- ${m.testName}: ${m.value} (Range: ${m.referenceRange || 'N/A'}) - Status: ${m.status.toUpperCase()} (${m.interpretation})`).join('\n') || 'None'}
@@ -190,6 +193,9 @@ Facility: ${metadata.facilityName || 'N/A'}
 
 Clinical Brief:
 ${executiveSummary || 'N/A'}
+
+Clinical Diagnoses:
+${diagnosis?.map(d => `- ${d}`).join('\n') || 'None'}
 
 Key Metrics & Readings:
 ${labMetrics?.map(m => `- ${m.testName}: ${m.value} (Range: ${m.referenceRange || 'N/A'}) - Status: ${m.status.toUpperCase()} (${m.interpretation})`).join('\n') || 'None'}
@@ -328,6 +334,21 @@ ${detailedAnalysis || 'N/A'}
                   <span>Clinical Brief (Executive Summary)</span>
                 </div>
                 <p style={{ fontSize: '0.925rem', color: 'var(--text-primary)', lineHeight: '1.6' }}>{executiveSummary}</p>
+              </div>
+            )}
+
+            {/* Pointwise Diagnosis Card */}
+            {diagnosis && diagnosis.length > 0 && (
+              <div className="summary-card" style={{ borderLeft: '4px solid var(--color-danger)', background: 'rgba(244, 63, 94, 0.02)' }}>
+                <div className="summary-card-header findings" style={{ color: 'var(--color-danger)' }}>
+                  <Stethoscope size={16} />
+                  <span>Primary Diagnoses & Assessments</span>
+                </div>
+                <ul style={{ paddingLeft: '1.25rem', color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {diagnosis.map((item, i) => (
+                    <li key={i} style={{ lineHeight: '1.5' }}>{parseLineContent(item)}</li>
+                  ))}
+                </ul>
               </div>
             )}
 

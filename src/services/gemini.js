@@ -52,6 +52,9 @@ Your output must be a valid JSON object matching the following structure:
     "facilityName": "Hospital, lab, or clinic name (or 'Not Specified')"
   },
   "executiveSummary": "A 2-3 sentence patient-friendly brief summarizing the key clinical findings and what they mean for the patient's immediate health.",
+  "diagnosis": [
+    "A point-wise list of primary clinical diagnoses, medical assessments, or notable findings identified in the report. Each point should list the clinical term and a brief, patient-friendly explanation in parentheses. (e.g., 'Anemia (low red blood cell count that may cause tiredness)', 'Kidney Stones (small hard deposits in the kidneys)')"
+  ],
   "detailedAnalysis": "A comprehensive patient-focused overview of the entire medical report in markdown. Break down the sections (e.g. Clinical Notes, Reason for Study, Overall Impression) clearly.",
   "labMetrics": [
     {
