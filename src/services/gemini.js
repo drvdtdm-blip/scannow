@@ -33,7 +33,7 @@ export async function analyzeMedicalDocument(apiKey, base64Data, mimeType) {
     model: 'gemini-3.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
-      temperature: 0.15
+      temperature: 0.1
     }
   });
 
@@ -56,19 +56,27 @@ Your output must be a valid JSON object matching the following structure:
     "A point-wise list of primary clinical diagnoses, medical assessments, or notable findings identified in the report. Each point should list the clinical term and a brief, patient-friendly explanation in parentheses. (e.g., 'Anemia (low red blood cell count that may cause tiredness)', 'Kidney Stones (small hard deposits in the kidneys)')"
   ],
   "detailedAnalysis": "A comprehensive patient-focused overview of the entire medical report in markdown. Break down the sections (e.g. Clinical Notes, Reason for Study, Overall Impression) clearly.",
-  "labMetrics": [
+  "investigationsAndProcedures": [
     {
-      "testName": "The parameter or test name (e.g. Hemoglobin, Systolic Blood Pressure, Cholesterol)",
-      "value": "The measured value in the report (e.g. 11.2 g/dL, 135 mmHg, 220 mg/dL)",
-      "status": "One of: normal | low | high | elevated",
-      "referenceRange": "The normal/reference range if given in the report (e.g. 12.0 - 15.5 g/dL, < 120 mmHg, < 200 mg/dL)",
-      "interpretation": "A 1-sentence simplified explanation of what this specific level/reading indicates for the patient."
+      "date": "Date of the investigation or procedure, e.g. YYYY-MM-DD or Month YYYY (or 'Date Not Specified')",
+      "name": "Name of the lab test, scan, or procedure (e.g. Kidney Ultrasound, Liver Function Test, Appendectomy)",
+      "result": "Key result, finding, or value in simple terms."
     }
+  ],
+  "previousConsultations": [
+    {
+      "date": "Date of the past consultation, e.g. YYYY-MM-DD or Month YYYY (or 'Date Not Specified')",
+      "specialtyOrProvider": "Doctor, specialty, or clinic visited (e.g. Cardiology, Dr. Patel)",
+      "reasonOrOutcome": "Primary reason for visit or clinical conclusion."
+    }
+  ],
+  "medications": [
+    "Strictly name ONLY the drug itself (e.g. 'Metformin', 'Atorvastatin'). DO NOT include dosage (e.g. 500mg), frequency (e.g. twice daily), times, or any instructions of taking it."
   ],
   "recommendations": [
     {
-      "category": "The type of action (e.g. Follow-up, Medication, Lifestyle, Diagnostic Test)",
-      "action": "The specific task or next step recommended (e.g. 'Schedule a checkup with your cardiologist in 2 weeks', 'Avoid high-sodium foods to help manage blood pressure')."
+      "category": "The type of action (e.g. Follow-up, Lifestyle, Dietary, Referral)",
+      "action": "The specific task or next step recommended (excluding medications, e.g. 'Follow up with ophthalmologist in 6 months', 'Limit daily sodium intake')."
     }
   ],
   "dictionary": [
@@ -80,7 +88,9 @@ Your output must be a valid JSON object matching the following structure:
   ]
 }
 
-If the report is not a lab test (e.g., it is a progress note or an MRI scan), extract any specific measurements (like tumor size, heart rate, blood pressure, weight) and place them in the 'labMetrics' array. If there are absolutely no measurements or numbers, leave 'labMetrics' as an empty array [].
+- For 'investigationsAndProcedures', sort the array chronologically from oldest to newest based on the dates.
+- For 'previousConsultations', sort the array chronologically from oldest to newest based on the dates.
+- For 'medications', strictly include ONLY the name of the drug. Example: if the report says 'Take Lipitor 10mg tab daily at bedtime', you must output 'Lipitor' only.
 Ensure all JSON strings are properly formatted. Do not include markdown code block syntax inside the JSON strings.`;
 
   const filePart = {

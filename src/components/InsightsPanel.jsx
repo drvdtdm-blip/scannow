@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   FileText, BookOpen, MessageSquare, User, Activity, Stethoscope, 
   CheckSquare, AlertCircle, Copy, Check, FileDown, Send, ShieldAlert,
-  ListTodo, Info, FileSearch
+  ListTodo, Info, FileSearch, Calendar, Layers
 } from 'lucide-react';
 
 // Simple Markdown component to parse bold text and newlines
@@ -150,7 +150,17 @@ export default function InsightsPanel({ reportData, chatSession, isAnalyzing, st
     );
   }
 
-  const { metadata, executiveSummary, diagnosis, detailedAnalysis, labMetrics, recommendations, dictionary } = reportData;
+  const { 
+    metadata, 
+    executiveSummary, 
+    diagnosis, 
+    detailedAnalysis, 
+    investigationsAndProcedures, 
+    previousConsultations, 
+    medications, 
+    recommendations, 
+    dictionary 
+  } = reportData;
 
   const handleCopySummary = () => {
     const textToCopy = `
@@ -167,8 +177,14 @@ ${executiveSummary || 'N/A'}
 Clinical Diagnoses:
 ${diagnosis?.map(d => `- ${d}`).join('\n') || 'None'}
 
-Key Metrics & Readings:
-${labMetrics?.map(m => `- ${m.testName}: ${m.value} (Range: ${m.referenceRange || 'N/A'}) - Status: ${m.status.toUpperCase()} (${m.interpretation})`).join('\n') || 'None'}
+Medications (Active & Recommended):
+${medications?.map(m => `- ${m}`).join('\n') || 'None'}
+
+Investigations & Procedures Chronology:
+${investigationsAndProcedures?.map(i => `- [${i.date}] ${i.name}: ${i.result}`).join('\n') || 'None'}
+
+Previous Consultations Chronology:
+${previousConsultations?.map(c => `- [${c.date}] ${c.specialtyOrProvider}: ${c.reasonOrOutcome}`).join('\n') || 'None'}
 
 Care Plan Recommendations:
 ${recommendations?.map(r => `- [${r.category}] ${r.action}`).join('\n') || 'None'}
@@ -197,8 +213,14 @@ ${executiveSummary || 'N/A'}
 Clinical Diagnoses:
 ${diagnosis?.map(d => `- ${d}`).join('\n') || 'None'}
 
-Key Metrics & Readings:
-${labMetrics?.map(m => `- ${m.testName}: ${m.value} (Range: ${m.referenceRange || 'N/A'}) - Status: ${m.status.toUpperCase()} (${m.interpretation})`).join('\n') || 'None'}
+Medications (Active & Recommended):
+${medications?.map(m => `- ${m}`).join('\n') || 'None'}
+
+Investigations & Procedures Chronology:
+${investigationsAndProcedures?.map(i => `- [${i.date}] ${i.name}: ${i.result}`).join('\n') || 'None'}
+
+Previous Consultations Chronology:
+${previousConsultations?.map(c => `- [${c.date}] ${c.specialtyOrProvider}: ${c.reasonOrOutcome}`).join('\n') || 'None'}
 
 Care Plan Recommendations:
 ${recommendations?.map(r => `- [${r.category}] ${r.action}`).join('\n') || 'None'}
@@ -244,7 +266,7 @@ ${detailedAnalysis || 'N/A'}
   };
 
   const suggestions = [
-    "Are there any abnormal blood levels?",
+    "Are there any abnormal values in this timeline?",
     "Explain these recommendations simply",
     "What follow-up diagnostics should I do?",
     "Define terms in plain English"
@@ -352,40 +374,64 @@ ${detailedAnalysis || 'N/A'}
               </div>
             )}
 
-            {/* Health Metrics & Readings Table */}
-            {labMetrics && labMetrics.length > 0 && (
-              <div className="summary-card" style={{ padding: '1rem 0' }}>
-                <div className="summary-card-header" style={{ color: 'var(--color-accent)', padding: '0 1.25rem 0.5rem 1.25rem' }}>
-                  <Activity size={16} />
-                  <span>Health Metrics & Lab Results</span>
+            {/* Medications Card (Only drug names, capsule pill tags) */}
+            {medications && medications.length > 0 && (
+              <div className="summary-card">
+                <div className="summary-card-header actions" style={{ color: 'var(--color-success)', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
+                  <Layers size={16} />
+                  <span>Active & Recommended Medications</span>
                 </div>
-                <div style={{ overflowX: 'auto', width: '100%' }}>
-                  <table className="medical-table">
-                    <thead>
-                      <tr>
-                        <th>Parameter</th>
-                        <th>Value</th>
-                        <th>Ref Range</th>
-                        <th>Status</th>
-                        <th>Patient Interpretation</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {labMetrics.map((metric, i) => (
-                        <tr key={i}>
-                          <td style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{metric.testName}</td>
-                          <td style={{ fontFamily: 'var(--font-mono)' }}>{metric.value}</td>
-                          <td style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{metric.referenceRange || 'N/A'}</td>
-                          <td>
-                            <span className={`status-pill ${metric.status}`}>
-                              {metric.status}
-                            </span>
-                          </td>
-                          <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{metric.interpretation}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                  Listed by drug name only (consult physician for dosage and schedule):
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>
+                  {medications.map((med, i) => (
+                    <span key={i} className="status-pill normal" style={{ fontSize: '0.85rem', padding: '0.35rem 0.75rem', borderRadius: '15px', fontWeight: '600' }}>
+                      {med}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Investigations and Procedures Chronological Timeline */}
+            {investigationsAndProcedures && investigationsAndProcedures.length > 0 && (
+              <div className="summary-card">
+                <div className="summary-card-header" style={{ color: 'var(--color-primary)' }}>
+                  <Layers size={16} style={{ color: 'var(--color-primary)' }} />
+                  <span>Investigations & Procedures Timeline</span>
+                </div>
+                <div className="timeline-container">
+                  {investigationsAndProcedures.map((item, i) => (
+                    <div key={i} className="timeline-item">
+                      <div className="timeline-badge-date">{item.date}</div>
+                      <div className="timeline-content-card">
+                        <strong className="timeline-content-title">{item.name}</strong>
+                        <p className="timeline-content-desc">{item.result}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Previous Consultations Chronological Timeline */}
+            {previousConsultations && previousConsultations.length > 0 && (
+              <div className="summary-card">
+                <div className="summary-card-header" style={{ color: 'var(--color-accent)' }}>
+                  <Calendar size={16} style={{ color: 'var(--color-accent)' }} />
+                  <span>Clinical Consultations History</span>
+                </div>
+                <div className="timeline-container">
+                  {previousConsultations.map((item, i) => (
+                    <div key={i} className="timeline-item">
+                      <div className="timeline-badge-date">{item.date}</div>
+                      <div className="timeline-content-card">
+                        <strong className="timeline-content-title">{item.specialtyOrProvider}</strong>
+                        <p className="timeline-content-desc">{item.reasonOrOutcome}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
