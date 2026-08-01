@@ -8,7 +8,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 export async function validateApiKey(apiKey) {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash' });
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: 'Respond with "OK" only.' }] }]
     });
@@ -29,9 +29,9 @@ export async function validateApiKey(apiKey) {
 export async function analyzeMedicalDocument(apiKey, base64Data, mimeType) {
   const genAI = new GoogleGenerativeAI(apiKey);
   
-  // Use gemini-2.0-flash for fast and accurate multimodal document processing
+  // Use gemini-3.5-flash for fast and accurate multimodal document processing
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
       temperature: 0.1
@@ -102,7 +102,7 @@ Ensure all JSON strings are properly formatted. Do not include markdown code blo
 export function startDocumentChat(apiKey, base64Data, mimeType) {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3.5-flash',
     systemInstruction: "You are AegisScan AI, an empathetic and highly knowledgeable medical assistant. The user has uploaded a medical document which you have processed. Answer their questions about the document clearly, explain medical terms, and provide health tips. Always remind them to consult their doctor for official diagnoses and medical decisions. Keep responses formatting clean, brief, and structured with markdown if helpful."
   });
 
