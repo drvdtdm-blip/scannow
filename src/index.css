@@ -1263,3 +1263,152 @@ h1, h2, h3, h4, h5, h6 {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* Medical Table Styles */
+.medical-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.medical-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.medical-table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+}
+
+.medical-table tr:hover td {
+  background: rgba(255, 255, 255, 0.01);
+}
+
+/* Status Pills */
+.status-pill {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-pill.normal {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-pill.low {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--color-accent);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.status-pill.elevated {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-pill.high {
+  background: rgba(244, 63, 94, 0.1);
+  color: var(--color-danger);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+/* Care Plan Checklist */
+.checklist-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 0.875rem;
+  border-radius: var(--border-radius-md);
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.checklist-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.checklist-item.checked {
+  border-color: rgba(16, 185, 129, 0.25);
+  background: rgba(16, 185, 129, 0.02);
+}
+
+.check-box {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-success);
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.checklist-item:hover .check-box {
+  border-color: var(--text-secondary);
+}
+
+.checklist-item.checked .check-box {
+  border-color: var(--color-success);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.checklist-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.checklist-category {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  letter-spacing: 0.5px;
+}
+
+.checklist-item.checked .checklist-category {
+  color: var(--text-muted);
+}
+
+.checklist-action {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.checklist-item.checked .checklist-action {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+

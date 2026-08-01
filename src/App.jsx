@@ -73,6 +73,7 @@ export default function App() {
           return {
             ...doc,
             status: 'failed',
+            errorMsg: error.message || String(error),
             reportData: null,
             chatSession: null
           };
@@ -106,8 +107,8 @@ export default function App() {
       <header className="app-header">
         <div className="logo-section">
           <Activity className="logo-icon" size={26} />
-          <h1 className="logo-text">AegisScan AI</h1>
-          <span className="logo-badge">Secure Sandbox</span>
+          <h1 className="logo-text">AegisScan EHR</h1>
+          <span className="logo-badge">Clinical Summarizer</span>
         </div>
 
         <div className="header-actions">
@@ -132,7 +133,7 @@ export default function App() {
           {/* Section: Upload controls */}
           <div className="sidebar-section">
             <div className="section-title">
-              <span>Scanner Control</span>
+              <span>Report Intake Portal</span>
             </div>
             <UploadZone 
               onFileSelected={handleFileSelected} 
@@ -143,14 +144,14 @@ export default function App() {
           {/* Section: Scan History list */}
           <div className="sidebar-section" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <div className="section-title">
-              <span>Scan History</span>
+              <span>Summarized Patient Files</span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({documents.length})</span>
             </div>
             
             <div className="doc-list" style={{ overflowY: 'auto', flex: 1 }} role="list">
               {documents.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                  No documents scanned yet.
+                  No reports summarized yet.
                 </div>
               ) : (
                 documents.map((doc) => (
@@ -167,9 +168,9 @@ export default function App() {
                         <div className="doc-item-name">{doc.name}</div>
                         <div className="doc-item-date">{doc.createdAt}</div>
                         <div className={`doc-item-status-badge ${doc.status}`}>
-                          {doc.status === 'analyzing' && 'scanning...'}
-                          {doc.status === 'completed' && 'completed'}
-                          {doc.status === 'failed' && 'scan failed'}
+                          {doc.status === 'analyzing' && 'analyzing...'}
+                          {doc.status === 'completed' && 'summarized'}
+                          {doc.status === 'failed' && 'failed'}
                         </div>
                       </div>
                     </div>
@@ -212,6 +213,8 @@ export default function App() {
                 reportData={activeDoc.reportData}
                 chatSession={activeDoc.chatSession}
                 isAnalyzing={activeDoc.status === 'analyzing'}
+                status={activeDoc.status}
+                errorMsg={activeDoc.errorMsg}
               />
             </div>
           ) : (
@@ -220,9 +223,9 @@ export default function App() {
               <div className="empty-state-icon">
                 <Shield size={38} className="logo-icon" />
               </div>
-              <h2 className="empty-state-title">Secure Medical Document Assistant</h2>
+              <h2 className="empty-state-title">Clinical Report Summarizer Portal</h2>
               <p className="empty-state-description">
-                Upload scans, laboratory results, or PDF reports. Our clinical assistant extracts patient details, compiles a plain-English translation of complex terminology, and supports interactive questions.
+                Upload laboratory reports, doctor notes, radiology scans, or discharge records. AegisScan compiles plain-English executive summaries, parses health metrics into readable reference tables, builds care checklists, and supports interactive AI follow-up questions.
               </p>
               
               {!apiKey ? (
@@ -235,7 +238,7 @@ export default function App() {
               ) : (
                 <div style={{ color: 'var(--color-primary)', fontSize: '0.85rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span className="status-dot active"></span>
-                  <span>System connected. Drag a file into the control bar to begin.</span>
+                  <span>System connected. Upload or drag a medical document into the intake portal on the left sidebar to begin.</span>
                 </div>
               )}
             </div>
