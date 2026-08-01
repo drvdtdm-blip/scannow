@@ -63,7 +63,7 @@ function parseLineContent(text) {
   });
 }
 
-export default function InsightsPanel({ reportData, chatSession, isAnalyzing }) {
+export default function InsightsPanel({ reportData, chatSession, isAnalyzing, status, errorMsg }) {
   const [activeTab, setActiveTab] = useState('summary');
   const [copied, setCopied] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
@@ -110,6 +110,30 @@ export default function InsightsPanel({ reportData, chatSession, isAnalyzing }) 
           <div className="skeleton-line long"></div>
           <div className="skeleton-line medium"></div>
         </div>
+      </div>
+    );
+  }
+
+  if (status === 'failed') {
+    return (
+      <div className="insights-panel" style={{ padding: '2rem', justifyContent: 'center', alignItems: 'center', textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div style={{ color: 'var(--color-danger)', marginBottom: '1rem' }}>
+          <AlertCircle size={48} style={{ animation: 'pulse-slow 2s infinite' }} />
+        </div>
+        <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Scan Analysis Failed</h3>
+        <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '360px', margin: '0 auto 1.5rem auto', lineHeight: '1.5' }}>
+          <p style={{ marginBottom: '0.75rem', fontWeight: 'bold' }}>Error Details:</p>
+          <code style={{ display: 'block', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', wordBreak: 'break-all', textAlign: 'left', color: '#fca5a5' }}>
+            {errorMsg || "An unknown error occurred during document processing. Please check the console or ensure your API key has proper access."}
+          </code>
+        </div>
+        <button 
+          className="empty-state-action-btn" 
+          onClick={() => window.location.reload()}
+          style={{ background: 'rgba(244, 63, 94, 0.1)', border: '1px solid var(--color-danger)', color: '#fda4af' }}
+        >
+          Reload App & Retry
+        </button>
       </div>
     );
   }
