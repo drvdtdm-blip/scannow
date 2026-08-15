@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Heart, Activity, FileText, AlertCircle, CheckCircle2, HelpCircle, 
   Clock, ShieldAlert, Copy, Check, FileDown, Send, Pill, Calendar, 
-  Stethoscope, AlertTriangle, Search, Filter, Layers, ListChecks
+  Stethoscope, AlertTriangle, Search, Filter, Layers, ListChecks, MessageSquare
 } from 'lucide-react';
 
 // Simple Markdown parser helper
