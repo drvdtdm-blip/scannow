@@ -395,7 +395,117 @@ ${missingInformation.map(m => `* ${m}`).join('\n') || 'None'}
       doc.text(`AegisScan Cardiology AI Report - Page ${i} of ${totalPages}`, pageWidth - margin - 140, pageHeight - 15);
     }
 
-    doc.save(`Cardiology_Summary_${(metadata.patientName || "Patient").replace(/\s+/g, "_")}.pdf`);
+    doc.save(`Cardiology_Full_Summary_${(metadata.patientName || "Patient").replace(/\s+/g, "_")}.pdf`);
+  };
+
+  const handleExportSinglePagePDF = () => {
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth(); // 595.28 pt
+    const pageHeight = doc.internal.pageSize.getHeight(); // 841.89 pt
+    const margin = 28;
+    const maxLineWidth = pageWidth - margin * 2;
+    let y = 25;
+
+    // Header Banner (Dark Navy)
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageWidth, 50, 'F');
+
+    doc.setTextColor(244, 63, 94);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('AegisScan Cardiology - 1-Page Executive Consult Summary', margin, 22);
+
+    doc.setTextColor(148, 163, 184);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`Patient: ${metadata.patientName || 'N/A'}  |  Age/Gender: ${metadata.patientAge || 'N/A'} / ${metadata.patientGender || 'N/A'}  |  Date: ${metadata.documentDate || 'N/A'}`, margin, 38);
+
+    y = 62;
+
+    const printHeader = (title, color = [6, 182, 212]) => {
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.rect(margin, y, 3, 10, 'F');
+      doc.setTextColor(15, 23, 42);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.text(title, margin + 7, y + 8);
+      y += 14;
+    };
+
+    const printText = (text, fontSize = 8, isBold = false, color = [30, 41, 59]) => {
+      if (!text) return;
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      doc.setFontSize(fontSize);
+      doc.setTextColor(color[0], color[1], color[2]);
+      const lines = doc.splitTextToSize(text, maxLineWidth);
+      doc.text(lines, margin, y);
+      y += lines.length * (fontSize + 2) + 2;
+    };
+
+    // 1. Clinical Snapshot
+    printHeader('1. CLINICAL SNAPSHOT', [244, 63, 94]);
+    printText(clinicalSnapshot, 8.5, true, [15, 23, 42]);
+    y += 2;
+
+    // 2. Cardiologist Quick View (max 5 key bullets)
+    if (cardiologistQuickView.length > 0) {
+      printHeader('2. CARDIOLOGIST QUICK CONSULT VIEW (30-60s Review)', [6, 182, 212]);
+      cardiologistQuickView.slice(0, 5).forEach(bullet => {
+        printText(`• ${bullet}`, 8, false, [30, 41, 59]);
+      });
+      y += 2;
+    }
+
+    // 3. Established Major Diagnoses
+    printHeader('3. MAJOR DIAGNOSES & EVIDENCE CLASSIFICATION', [99, 102, 241]);
+    if (stronglySupported.length > 0) {
+      printText(`Strongly Supported: ${stronglySupported.join('; ')}`, 8, false, [16, 185, 129]);
+    }
+    if (previouslyDocumented.length > 0) {
+      printText(`Needs Confirmation: ${previouslyDocumented.join('; ')}`, 8, false, [245, 158, 11]);
+    }
+    if (uncertainUnsupported.length > 0) {
+      printText(`Uncertain / Unsupported: ${uncertainUnsupported.join('; ')}`, 8, false, [100, 116, 139]);
+    }
+    y += 2;
+
+    // 4. Most Likely Current Medications
+    if (currentMedications.length > 0) {
+      printHeader('4. CURRENT MEDICATIONS', [16, 185, 129]);
+      const medText = currentMedications.slice(0, 6).map(m => `${m.medicine} ${m.dose || ''}`).join('  |  ');
+      printText(medText, 8, false, [30, 41, 59]);
+      y += 2;
+    }
+
+    // 5. Investigations & LVEF Trend
+    printHeader('5. ECHO LVEF TREND & CAG / PCI SUMMARY', [244, 63, 94]);
+    if (lvefTrend) printText(`LVEF Trend: ${lvefTrend}`, 8.5, true, [15, 23, 42]);
+    cagPciList.slice(0, 2).forEach(c => {
+      printText(`CAG (${c.date}): LM:${c.lm}, LAD:${c.lad}, LCX:${c.lcx}, RCA:${c.rca} | PCI: ${c.pciDetails}`, 7.5, false, [51, 65, 85]);
+    });
+    y += 2;
+
+    // 6. Cardiovascular Risk Factors
+    if (riskFactors.length > 0) {
+      printHeader('6. RISK FACTORS', [6, 182, 212]);
+      const rfText = riskFactors.map(rf => `${rf.factor}: ${rf.status}`).join(' | ');
+      printText(rfText, 7.5, false, [51, 65, 85]);
+      y += 2;
+    }
+
+    // 7. Conflicts & Critical Missing Info
+    if (conflictsAndDiscrepancies.length > 0 || missingInformation.length > 0) {
+      printHeader('7. CONFLICTS & MISSING INFORMATION', [245, 158, 11]);
+      if (conflictsAndDiscrepancies.length > 0) printText(`Conflicts: ${conflictsAndDiscrepancies.slice(0, 2).join('; ')}`, 7.5, false, [180, 83, 9]);
+      if (missingInformation.length > 0) printText(`Missing: ${missingInformation.slice(0, 3).join('; ')}`, 7.5, false, [225, 29, 72]);
+    }
+
+    // Footer
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text('AegisScan Cardiology AI - 1-Page Executive Consult Summary (Confidential)', margin, pageHeight - 12);
+
+    doc.save(`Cardiology_1Page_Summary_${(metadata.patientName || "Patient").replace(/\s+/g, "_")}.pdf`);
   };
 
   const handleSendMessage = async (textToSend) => {
@@ -643,11 +753,15 @@ ${missingInformation.map(m => `* ${m}`).join('\n') || 'None'}
             <div className="summary-export-bar">
               <button className="export-btn" onClick={handleCopy}>
                 {copied ? <Check size={15} style={{ color: 'var(--color-success)' }} /> : <Copy size={15} />}
-                <span>{copied ? 'Copied Summary' : 'Copy Full Summary'}</span>
+                <span>{copied ? 'Copied' : 'Copy Text'}</span>
+              </button>
+              <button className="export-btn" onClick={handleExportSinglePagePDF} style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)', background: 'rgba(6, 182, 212, 0.08)' }}>
+                <FileDown size={15} />
+                <span>Export 1-Page PDF</span>
               </button>
               <button className="export-btn primary" onClick={handleExportPDF}>
                 <FileDown size={15} />
-                <span>Export PDF Report</span>
+                <span>Export Detailed PDF</span>
               </button>
             </div>
 
