@@ -106,9 +106,9 @@ export default function App() {
       {/* Top Header Navigation */}
       <header className="app-header">
         <div className="logo-section">
-          <Activity className="logo-icon" size={26} />
-          <h1 className="logo-text">AegisScan EHR</h1>
-          <span className="logo-badge">Clinical Summarizer</span>
+          <Activity className="logo-icon" size={26} style={{ color: 'var(--color-danger)' }} />
+          <h1 className="logo-text">AegisScan Cardiology</h1>
+          <span className="logo-badge" style={{ borderColor: 'rgba(244, 63, 94, 0.4)', color: 'var(--color-danger)', background: 'rgba(244, 63, 94, 0.1)' }}>Cardiologist Review AI</span>
         </div>
 
         <div className="header-actions">
@@ -155,11 +155,13 @@ export default function App() {
                 </div>
               ) : (
                 documents.map((doc) => (
-                  <button
+                  <div
                     key={doc.id}
                     className={`doc-item ${doc.id === activeDocId ? 'active' : ''}`}
                     onClick={() => setActiveDocId(doc.id)}
-                    role="listitem"
+                    role="button"
+                    tabIndex="0"
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveDocId(doc.id); } }}
                     aria-label={`Select document ${doc.name}`}
                   >
                     <div className="doc-item-left">
@@ -183,7 +185,7 @@ export default function App() {
                     >
                       <Trash2 size={14} />
                     </button>
-                  </button>
+                  </div>
                 ))
               )}
             </div>
@@ -220,12 +222,12 @@ export default function App() {
           ) : (
             // Landing Dashboard Welcome screen
             <div className="empty-state">
-              <div className="empty-state-icon">
-                <Shield size={38} className="logo-icon" />
+              <div className="empty-state-icon" style={{ borderColor: 'rgba(244, 63, 94, 0.2)', background: 'rgba(244, 63, 94, 0.05)' }}>
+                <Shield size={38} className="logo-icon" style={{ color: 'var(--color-danger)' }} />
               </div>
-              <h2 className="empty-state-title">Clinical Report Summarizer Portal</h2>
+              <h2 className="empty-state-title">Cardiology Clinical Record Summarizer AI</h2>
               <p className="empty-state-description">
-                Upload laboratory reports, doctor notes, radiology scans, or discharge records. AegisScan compiles plain-English executive summaries, parses health metrics into readable reference tables, builds care checklists, and supports interactive AI follow-up questions.
+                Upload scattered medical records (prescriptions, discharge summaries, ECGs, Echo, CAG/PCI reports, lab data). AegisScan converts records into a concise, evidence-based, 30-60 second chronological Cardiology Review containing clinical snapshot, quick view, LVEF trends, medication audit, and risk factor matrices.
               </p>
               
               {!apiKey ? (
