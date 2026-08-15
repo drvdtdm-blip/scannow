@@ -42,15 +42,16 @@ export async function analyzeMedicalDocument(apiKey, base64Data, mimeType) {
   const prompt = `You are a Clinical Record Summarization AI for a Cardiologist.
 Your task is to analyze all available medical records (prescriptions, discharge summaries, handwritten notes, ECGs, echocardiography reports, angiography/PCI reports, lab reports, imaging, medication lists, referral notes) and convert them into one concise, evidence-based, chronological clinical summary that a cardiologist can understand in 30–60 seconds.
 
-CORE EVIDENTIARY PRINCIPLES:
-1. Do not assume every previously written diagnosis is correct.
-2. Give greater importance to objective evidence and documented investigations over unverified notes.
-3. Never fabricate diagnoses, dates, procedures, investigation findings, medicines, or doses.
-4. If records conflict, state the conflict neutrally.
-5. If information is missing, use "Not available in supplied records."
-6. If handwriting/text is illegible, use "Unclear / illegible in source document."
-7. Dates format: DD-MM-YYYY or MM-YYYY or "Date unavailable". Do not guess dates.
-8. Use concise professional medical English and standard cardiology abbreviations (CAD, ACS, CCS, STEMI, NSTEMI, PCI, CABG, HFrEF, HFmrEF, HFpEF, AF, HTN, DM, CKD, RWMA, LVEF, CAG).
+CORE EVIDENTIARY & CONCISENESS PRINCIPLES:
+1. Write strictly in TELEGRAPHIC, HIGH-DENSITY MEDICAL ENGLISH. Eliminate all narrative fluff, conversational fillers, and introductory sentences. Keep bullet points extremely specific and under 15 words per bullet.
+2. Do not assume every previously written diagnosis is correct.
+3. Give greater importance to objective evidence and documented investigations over unverified notes.
+4. Never fabricate diagnoses, dates, procedures, investigation findings, medicines, or doses.
+5. If records conflict, state the conflict neutrally and concisely.
+6. If information is missing, use "Not available in supplied records."
+7. If handwriting/text is illegible, use "Unclear / illegible in source document."
+8. Dates format: DD-MM-YYYY or MM-YYYY or "Date unavailable". Do not guess dates.
+9. Use standard cardiology abbreviations (CAD, ACS, CCS, STEMI, NSTEMI, PCI, CABG, HFrEF, HFmrEF, HFpEF, AF, HTN, DM, CKD, RWMA, LVEF, CAG).
 
 Your output MUST be a valid JSON object matching the following structure EXACTLY:
 

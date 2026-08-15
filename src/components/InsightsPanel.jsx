@@ -402,115 +402,179 @@ ${missingInformation.map(m => `* ${m}`).join('\n') || 'None'}
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth(); // 595.28 pt
     const pageHeight = doc.internal.pageSize.getHeight(); // 841.89 pt
-    const margin = 26;
+    const margin = 24;
     const contentWidth = pageWidth - margin * 2;
-    let y = 22;
+    let y = 20;
 
-    // Top Brand Header Banner (Dark Navy)
+    // 1. Top Header Box (Clean Dark Header with Double-line Accent)
     doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, pageWidth, 52, 'F');
+    doc.rect(margin, y, contentWidth, 44, 'F');
+    doc.setFillColor(244, 63, 94);
+    doc.rect(margin, y, 4, 44, 'F');
 
-    doc.setTextColor(244, 63, 94);
+    doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.text('AegisScan Cardiology — 1-Page Clinical Consult Brief', margin, 20);
+    doc.setFontSize(12);
+    doc.text('CARDIOLOGY CLINICAL REVIEW — 1-PAGE EXECUTIVE BRIEF', margin + 12, y + 16);
 
-    doc.setTextColor(203, 213, 225);
+    doc.setTextColor(148, 163, 184);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text(`Patient: ${metadata.patientName || 'N/A'}  |  Age/Sex: ${metadata.patientAge || 'N/A'} / ${metadata.patientGender || 'N/A'}  |  Date: ${metadata.documentDate || 'N/A'}  |  Doc: ${metadata.documentType || 'Records'}`, margin, 38);
+    doc.text(`Patient: ${metadata.patientName || 'N/A'}  |  Age/Sex: ${metadata.patientAge || 'N/A'} / ${metadata.patientGender || 'N/A'}  |  Date: ${metadata.documentDate || 'N/A'}  |  Type: ${metadata.documentType || 'Records'}`, margin + 12, y + 32);
 
-    y = 60;
+    y += 50;
 
-    // Section Header Drawer
-    const drawSectionHeader = (title, color = [6, 182, 212], textColor = [15, 23, 42]) => {
-      doc.setFillColor(color[0], color[1], color[2]);
+    // Box Component Helper
+    const drawBoxHeader = (title, badgeText = '', headerColor = [30, 41, 59], titleColor = [255, 255, 255]) => {
+      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
       doc.rect(margin, y, contentWidth, 14, 'F');
-      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
+      doc.setFontSize(8.5);
       doc.text(title, margin + 6, y + 10);
-      y += 18;
+
+      if (badgeText) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(244, 63, 94);
+        doc.text(badgeText, pageWidth - margin - doc.getTextWidth(badgeText) - 6, y + 10);
+      }
+      y += 16;
     };
 
-    // Text Drawer
-    const drawText = (text, fontSize = 8, isBold = false, color = [30, 41, 59], indent = 0) => {
-      if (!text) return;
-      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
-      doc.setFontSize(fontSize);
-      doc.setTextColor(color[0], color[1], color[2]);
-      const lines = doc.splitTextToSize(text, contentWidth - indent);
-      doc.text(lines, margin + indent, y);
-      y += lines.length * (fontSize + 2.2) + 2;
-    };
+    // 1. EXECUTIVE SNAPSHOT & LVEF TRAJECTORY
+    drawBoxHeader('1. CLINICAL SNAPSHOT & LVEF TRAJECTORY', lvefTrend ? `LVEF: ${lvefTrend}` : '', [225, 29, 72]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(15, 23, 42);
+    const snapLines = doc.splitTextToSize(clinicalSnapshot || 'No clinical snapshot available.', contentWidth - 8);
+    doc.text(snapLines, margin + 4, y);
+    y += snapLines.length * 10.5 + 4;
 
-    // 1. CLINICAL SNAPSHOT & LVEF TRAJECTORY
-    drawSectionHeader('1. CLINICAL SNAPSHOT & LVEF TRAJECTORY', [244, 63, 94], [255, 255, 255]);
-    drawText(clinicalSnapshot, 8.5, true, [15, 23, 42]);
-    if (lvefTrend) {
-      drawText(`• LVEF Trajectory: ${lvefTrend}`, 8.5, true, [225, 29, 72]);
-    }
-    y += 3;
-
-    // 2. 30-SECOND CARDIOLOGIST CONSULT SUMMARY
+    // 2. 30-SECOND CARDIOLOGIST QUICK CONSULT (Telegraphic & Specific)
     if (cardiologistQuickView.length > 0) {
-      drawSectionHeader('2. 30-SECOND CARDIOLOGIST CONSULT SUMMARY', [6, 182, 212], [15, 23, 42]);
-      cardiologistQuickView.slice(0, 6).forEach(bullet => {
-        drawText(`• ${bullet}`, 8, false, [30, 41, 59], 4);
+      drawBoxHeader('2. 30-SECOND CARDIOLOGIST QUICK CONSULT', '', [15, 118, 110]);
+      cardiologistQuickView.slice(0, 5).forEach(bullet => {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(30, 41, 59);
+        const bulletText = `• ${bullet.replace(/^(•|-|\*)\s*/, '')}`;
+        const bLines = doc.splitTextToSize(bulletText, contentWidth - 8);
+        doc.text(bLines, margin + 4, y);
+        y += bLines.length * 9.5 + 2;
       });
-      y += 3;
+      y += 2;
     }
 
-    // 3. EVIDENCE-BASED DIAGNOSES CLASSIFICATION
-    drawSectionHeader('3. EVIDENCE-BASED DIAGNOSES CLASSIFICATION', [99, 102, 241], [255, 255, 255]);
+    // 3. EVIDENCE-BASED DIAGNOSES CLASSIFICATION (Specific & Short)
+    drawBoxHeader('3. EVIDENCE-BASED DIAGNOSES', '', [79, 70, 229]);
     if (stronglySupported.length > 0) {
-      drawText(`[ESTABLISHED / STRONGLY SUPPORTED]: ${stronglySupported.join('; ')}`, 8, true, [16, 185, 129]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(16, 185, 129);
+      doc.text('ESTABLISHED:', margin + 4, y);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(30, 41, 59);
+      const estText = stronglySupported.join('; ');
+      const eLines = doc.splitTextToSize(estText, contentWidth - 85);
+      doc.text(eLines, margin + 80, y);
+      y += eLines.length * 9.5 + 2;
     }
     if (previouslyDocumented.length > 0) {
-      drawText(`[NEEDS CONFIRMATION]: ${previouslyDocumented.join('; ')}`, 8, false, [217, 119, 6]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(217, 119, 6);
+      doc.text('NEEDS CONFIRMATION:', margin + 4, y);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(51, 65, 85);
+      const prevText = previouslyDocumented.join('; ');
+      const pLines = doc.splitTextToSize(prevText, contentWidth - 110);
+      doc.text(pLines, margin + 110, y);
+      y += pLines.length * 9.5 + 2;
     }
     if (uncertainUnsupported.length > 0) {
-      drawText(`[UNCERTAIN / UNSUPPORTED]: ${uncertainUnsupported.join('; ')}`, 8, false, [100, 116, 139]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text('UNSUPPORTED:', margin + 4, y);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      const unText = uncertainUnsupported.join('; ');
+      const uLines = doc.splitTextToSize(unText, contentWidth - 85);
+      doc.text(uLines, margin + 80, y);
+      y += uLines.length * 9.5 + 2;
     }
-    y += 3;
+    y += 2;
 
-    // 4. CURRENT MEDICATIONS & RISK FACTORS
-    drawSectionHeader('4. CURRENT MEDICATIONS & RISK FACTORS', [16, 185, 129], [255, 255, 255]);
+    // 4. MOST LIKELY CURRENT MEDICATIONS
     if (currentMedications.length > 0) {
-      const medList = currentMedications.slice(0, 7).map(m => `${m.medicine} (${m.dose || ''} ${m.frequency || ''})`).join('  •  ');
-      drawText(`Active Drugs: ${medList}`, 8, true, [15, 23, 42]);
+      drawBoxHeader('4. MOST LIKELY CURRENT MEDICATIONS', '', [16, 185, 129]);
+      const medItems = currentMedications.slice(0, 6).map(m => `${m.medicine}${m.dose ? ` ${m.dose}` : ''}`);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(15, 23, 42);
+      const medText = medItems.join('   •   ');
+      const mLines = doc.splitTextToSize(medText, contentWidth - 8);
+      doc.text(mLines, margin + 4, y);
+      y += mLines.length * 9.5 + 4;
     }
-    if (riskFactors.length > 0) {
-      const rfList = riskFactors.map(rf => `${rf.factor}: ${rf.status}`).join(' | ');
-      drawText(`Risk Profile: ${rfList}`, 7.5, false, [71, 85, 105]);
-    }
-    y += 3;
 
-    // 5. ANGIOGRAPHY (CAG) / PCI & RECENT LABS
-    drawSectionHeader('5. CORONARY ANGIOGRAPHY (CAG) / PCI & RECENT LABS', [244, 63, 94], [255, 255, 255]);
-    cagPciList.slice(0, 2).forEach(c => {
-      drawText(`CAG (${c.date}): LM:${c.lm} | LAD:${c.lad} | LCX:${c.lcx} | RCA:${c.rca}  --> PCI: ${c.pciDetails}`, 7.5, true, [30, 41, 59]);
-    });
-    if (laboratoryData.length > 0) {
-      const labText = laboratoryData.slice(0, 6).map(l => `${l.parameter}: ${l.latestValue}`).join('  |  ');
-      drawText(`Labs: ${labText}`, 7.5, false, [51, 65, 85]);
+    // 5. ANGIOGRAPHY (CAG) / PCI & RECENT LAB HIGHLIGHTS
+    drawBoxHeader('5. ANGIOGRAPHY (CAG) / PCI & RECENT LAB HIGHLIGHTS', '', [225, 29, 72]);
+    if (cagPciList.length > 0) {
+      cagPciList.slice(0, 2).forEach(c => {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(30, 41, 59);
+        const cagText = `CAG (${c.date}): LM:${c.lm} | LAD:${c.lad} | LCX:${c.lcx} | RCA:${c.rca}  — PCI: ${c.pciDetails}`;
+        const cLines = doc.splitTextToSize(cagText, contentWidth - 8);
+        doc.text(cLines, margin + 4, y);
+        y += cLines.length * 9.5 + 2;
+      });
     }
-    y += 3;
+    if (laboratoryData.length > 0) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(71, 85, 105);
+      const labText = `Labs: ` + laboratoryData.slice(0, 6).map(l => `${l.parameter}: ${l.latestValue}`).join('  |  ');
+      const lLines = doc.splitTextToSize(labText, contentWidth - 8);
+      doc.text(lLines, margin + 4, y);
+      y += lLines.length * 9 + 3;
+    }
 
     // 6. CONFLICTS & CRITICAL MISSING INFORMATION
     if (conflictsAndDiscrepancies.length > 0 || missingInformation.length > 0) {
-      drawSectionHeader('6. CONFLICTS & CRITICAL MISSING INFORMATION', [245, 158, 11], [15, 23, 42]);
-      if (conflictsAndDiscrepancies.length > 0) drawText(`[DISCREPANCIES]: ${conflictsAndDiscrepancies.slice(0, 3).join('; ')}`, 7.5, false, [180, 83, 9]);
-      if (missingInformation.length > 0) drawText(`[MISSING GAPS]: ${missingInformation.slice(0, 3).join('; ')}`, 7.5, false, [225, 29, 72]);
+      drawBoxHeader('6. CONFLICTS & CRITICAL MISSING GAPS', '', [217, 119, 6]);
+      if (conflictsAndDiscrepancies.length > 0) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(180, 83, 9);
+        const confText = `Discrepancies: ${conflictsAndDiscrepancies.slice(0, 2).join('; ')}`;
+        const cfLines = doc.splitTextToSize(confText, contentWidth - 8);
+        doc.text(cfLines, margin + 4, y);
+        y += cfLines.length * 9 + 2;
+      }
+      if (missingInformation.length > 0) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(190, 18, 60);
+        const missText = `Missing: ${missingInformation.slice(0, 3).join('; ')}`;
+        const msLines = doc.splitTextToSize(missText, contentWidth - 8);
+        doc.text(msLines, margin + 4, y);
+        y += msLines.length * 9 + 2;
+      }
     }
 
-    // Page Footer Banner
+    // Page Footer
     doc.setDrawColor(226, 232, 240);
-    doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
-    doc.setFontSize(7.5);
+    doc.line(margin, pageHeight - 18, pageWidth - margin, pageHeight - 18);
+    doc.setFontSize(7);
     doc.setTextColor(148, 163, 184);
     doc.setFont('helvetica', 'normal');
-    doc.text('AegisScan Cardiology AI — Evidence-Based 1-Page Clinical Consult Summary (Confidential)', margin, pageHeight - 10);
+    doc.text('AegisScan Cardiology AI — Evidence-Based 1-Page Clinical Brief (Confidential)', margin, pageHeight - 8);
 
     doc.save(`Cardiology_1Page_Summary_${(metadata.patientName || "Patient").replace(/\s+/g, "_")}.pdf`);
   };
