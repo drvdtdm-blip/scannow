@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { jsPDF } from 'jspdf';
 import { 
   Heart, Activity, FileText, AlertCircle, CheckCircle2, HelpCircle, 
   Clock, ShieldAlert, Copy, Check, FileDown, Send, Pill, Calendar, 
@@ -243,14 +244,158 @@ ${missingInformation.map(m => `* ${m}`).join('\n') || 'None'}
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
-    const element = document.createElement("a");
-    const file = new Blob([generateFullTextReport()], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    element.download = `Cardiology_Summary_${(metadata.patientName || "Patient").replace(/\s+/g, "_")}.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  const handleExportPDF = () => {
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 40;
+    const maxLineWidth = pageWidth - margin * 2;
+    let y = 40;
+
+    const checkPageBreak = (neededHeight = 25) => {
+      if (y + neededHeight > pageHeight - 45) {
+        doc.addPage();
+        y = 45;
+      }
+    };
+
+    // Header Banner
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageWidth, 75, 'F');
+
+    doc.setTextColor(244, 63, 94);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('AegisScan Cardiology EHR Summary', margin, 32);
+
+    doc.setTextColor(148, 163, 184);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`Patient: ${metadata.patientName || 'N/A'}  |  Age/Gender: ${metadata.patientAge || 'N/A'} / ${metadata.patientGender || 'N/A'}  |  Date: ${metadata.documentDate || 'N/A'}`, margin, 52);
+
+    y = 95;
+
+    // Helper to print section header
+    const printSectionHeader = (title, color = [6, 182, 212]) => {
+      checkPageBreak(32);
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.rect(margin, y, 4, 15, 'F');
+      doc.setTextColor(15, 23, 42);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text(title, margin + 10, y + 12);
+      y += 24;
+    };
+
+    // Helper to print lines with auto wrap
+    const printParagraph = (text, fontSize = 9, isBold = false, textColor = [51, 65, 85]) => {
+      if (!text) return;
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      doc.setFontSize(fontSize);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      const lines = doc.splitTextToSize(text, maxLineWidth);
+      checkPageBreak(lines.length * (fontSize + 3) + 4);
+      doc.text(lines, margin, y);
+      y += lines.length * (fontSize + 3) + 4;
+    };
+
+    // 1. CLINICAL SNAPSHOT
+    printSectionHeader('1. CLINICAL SNAPSHOT', [244, 63, 94]);
+    printParagraph(clinicalSnapshot, 10, true, [15, 23, 42]);
+    y += 6;
+
+    // 2. CARDIOLOGIST QUICK VIEW
+    if (cardiologistQuickView.length > 0) {
+      printSectionHeader('2. CARDIOLOGIST QUICK VIEW (30-60s Consult Summary)', [6, 182, 212]);
+      cardiologistQuickView.forEach(bullet => {
+        printParagraph(`• ${bullet}`, 9, false, [30, 41, 59]);
+      });
+      y += 6;
+    }
+
+    // 3. ESTABLISHED MAJOR DIAGNOSES
+    printSectionHeader('3. ESTABLISHED MAJOR DIAGNOSES', [99, 102, 241]);
+    if (stronglySupported.length > 0) {
+      printParagraph('[Established / Strongly Supported]', 9, true, [16, 185, 129]);
+      stronglySupported.forEach(d => printParagraph(`• ${d}`, 9, false, [30, 41, 59]));
+    }
+    if (previouslyDocumented.length > 0) {
+      printParagraph('[Previously Documented / Needs Confirmation]', 9, true, [245, 158, 11]);
+      previouslyDocumented.forEach(d => printParagraph(`• ${d}`, 9, false, [71, 85, 105]));
+    }
+    if (uncertainUnsupported.length > 0) {
+      printParagraph('[Uncertain / Unsupported]', 9, true, [100, 116, 139]);
+      uncertainUnsupported.forEach(d => printParagraph(`• ${d}`, 9, false, [100, 116, 139]));
+    }
+    y += 6;
+
+    // 4. MOST LIKELY CURRENT MEDICATIONS
+    if (currentMedications.length > 0) {
+      printSectionHeader('4. MOST LIKELY CURRENT MEDICATIONS', [16, 185, 129]);
+      currentMedications.forEach(med => {
+        printParagraph(`• ${med.medicine} (${med.dose || ''} ${med.frequency || ''}) - Indication: ${med.likelyIndication || 'N/A'} [Ref: ${med.evidence || 'N/A'}]`, 9, false, [30, 41, 59]);
+      });
+      y += 6;
+    }
+
+    // 5. CARDIOVASCULAR RISK FACTORS
+    if (riskFactors.length > 0) {
+      printSectionHeader('5. CARDIOVASCULAR RISK FACTORS', [6, 182, 212]);
+      const rfText = riskFactors.map(rf => `${rf.factor}: ${rf.status}`).join('  |  ');
+      printParagraph(rfText, 9, false, [51, 65, 85]);
+      y += 6;
+    }
+
+    // 6. CARDIOVASCULAR HISTORY
+    if (cardiovascularHistory.length > 0) {
+      printSectionHeader('6. CARDIOVASCULAR HISTORY', [244, 63, 94]);
+      cardiovascularHistory.forEach(h => printParagraph(`• ${h}`, 9, false, [30, 41, 59]));
+      y += 6;
+    }
+
+    // 7. CLINICAL TIMELINE
+    if (clinicalTimeline.length > 0) {
+      printSectionHeader('7. CLINICAL TIMELINE', [6, 182, 212]);
+      clinicalTimeline.forEach(t => {
+        printParagraph(`[${t.period}]`, 9, true, [6, 182, 212]);
+        t.events.forEach(e => printParagraph(`   - ${e}`, 8.5, false, [51, 65, 85]));
+      });
+      y += 6;
+    }
+
+    // 8. IMPORTANT INVESTIGATIONS
+    printSectionHeader('8. IMPORTANT INVESTIGATIONS (Echo, CAG/PCI, ECG)', [99, 102, 241]);
+    if (lvefTrend) printParagraph(`LVEF Trend: ${lvefTrend}`, 9.5, true, [15, 23, 42]);
+    echoList.forEach(e => printParagraph(`• Echo (${e.date}): LVEF ${e.lvef} | RWMA: ${e.rwma} | Valve: ${e.valveDisease}`, 8.5, false, [51, 65, 85]));
+    cagPciList.forEach(c => printParagraph(`• CAG (${c.date}): LM:${c.lm}, LAD:${c.lad}, LCX:${c.lcx}, RCA:${c.rca} | PCI: ${c.pciDetails}`, 8.5, false, [51, 65, 85]));
+    ecgList.forEach(e => printParagraph(`• ECG (${e.date}): ${e.rhythm} - ${e.findings}`, 8.5, false, [51, 65, 85]));
+    y += 6;
+
+    // 9. IMPORTANT LABORATORY DATA
+    if (laboratoryData.length > 0) {
+      printSectionHeader('9. IMPORTANT LABORATORY DATA & TRENDS', [6, 182, 212]);
+      laboratoryData.forEach(l => printParagraph(`• ${l.parameter}: ${l.latestValue} (Trend: ${l.trend || 'N/A'})`, 8.5, false, [51, 65, 85]));
+      y += 6;
+    }
+
+    // 10. CONFLICTS & MISSING INFORMATION
+    if (conflictsAndDiscrepancies.length > 0 || missingInformation.length > 0) {
+      printSectionHeader('10. CONFLICTS & MISSING INFORMATION', [245, 158, 11]);
+      conflictsAndDiscrepancies.forEach(c => printParagraph(`• Conflict: ${c}`, 8.5, false, [180, 83, 9]));
+      missingInformation.forEach(m => printParagraph(`• Missing: ${m}`, 8.5, false, [225, 29, 72]));
+      y += 6;
+    }
+
+    // Page Numbers Footer
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`AegisScan Cardiology AI Report - Page ${i} of ${totalPages}`, pageWidth - margin - 140, pageHeight - 15);
+    }
+
+    doc.save(`Cardiology_Summary_${(metadata.patientName || "Patient").replace(/\s+/g, "_")}.pdf`);
   };
 
   const handleSendMessage = async (textToSend) => {
@@ -500,9 +645,9 @@ ${missingInformation.map(m => `* ${m}`).join('\n') || 'None'}
                 {copied ? <Check size={15} style={{ color: 'var(--color-success)' }} /> : <Copy size={15} />}
                 <span>{copied ? 'Copied Summary' : 'Copy Full Summary'}</span>
               </button>
-              <button className="export-btn primary" onClick={handleDownload}>
+              <button className="export-btn primary" onClick={handleExportPDF}>
                 <FileDown size={15} />
-                <span>Export Cardiology Report</span>
+                <span>Export PDF Report</span>
               </button>
             </div>
 
