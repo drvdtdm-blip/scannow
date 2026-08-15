@@ -28,9 +28,9 @@ export default function UploadZone({ onFileSelected, disabled }) {
       return;
     }
 
-    // Limit to 10MB to avoid browser memory issues and respect Gemini limits
-    if (file.size > 10 * 1024 * 1024) {
-      setErrorMsg('File size must be under 10MB.');
+    // Limit to 50MB to support detailed multi-page medical records and high-res scans
+    if (file.size > 50 * 1024 * 1024) {
+      setErrorMsg('File size must be under 50MB.');
       return;
     }
 
@@ -113,7 +113,7 @@ export default function UploadZone({ onFileSelected, disabled }) {
           Drag & drop or click to browse
         </div>
         <div className="upload-text-sub" style={{ fontSize: '0.65rem' }}>
-          Supports PDF, JPEG, PNG (Max 10MB)
+          Supports PDF, JPEG, PNG (Max 50MB)
         </div>
       </div>
 
