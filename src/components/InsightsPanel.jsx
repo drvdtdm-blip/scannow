@@ -404,177 +404,144 @@ ${missingInformation.map(m => `* ${m}`).join('\n') || 'None'}
     const pageHeight = doc.internal.pageSize.getHeight(); // 841.89 pt
     const margin = 24;
     const contentWidth = pageWidth - margin * 2;
-    let y = 20;
+    let y = 18;
 
-    // 1. Top Header Box (Clean Dark Header with Double-line Accent)
+    // Header Banner
     doc.setFillColor(15, 23, 42);
-    doc.rect(margin, y, contentWidth, 44, 'F');
+    doc.rect(margin, y, contentWidth, 38, 'F');
     doc.setFillColor(244, 63, 94);
-    doc.rect(margin, y, 4, 44, 'F');
+    doc.rect(margin, y, 4, 38, 'F');
 
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('CARDIOLOGY CLINICAL REVIEW — 1-PAGE EXECUTIVE BRIEF', margin + 12, y + 16);
+    doc.setFontSize(11);
+    doc.text('CARDIOLOGY CLINICAL REVIEW — 1-PAGE SUMMARY', margin + 10, y + 14);
 
     doc.setTextColor(148, 163, 184);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text(`Patient: ${metadata.patientName || 'N/A'}  |  Age/Sex: ${metadata.patientAge || 'N/A'} / ${metadata.patientGender || 'N/A'}  |  Date: ${metadata.documentDate || 'N/A'}  |  Type: ${metadata.documentType || 'Records'}`, margin + 12, y + 32);
+    doc.text(`Patient: ${metadata.patientName || 'N/A'}  |  Age/Sex: ${metadata.patientAge || 'N/A'} / ${metadata.patientGender || 'N/A'}  |  Date: ${metadata.documentDate || 'N/A'}`, margin + 10, y + 28);
 
-    y += 50;
+    y += 44;
 
-    // Box Component Helper
-    const drawBoxHeader = (title, badgeText = '', headerColor = [30, 41, 59], titleColor = [255, 255, 255]) => {
-      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.rect(margin, y, contentWidth, 14, 'F');
-      doc.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+    const drawSectionHeader = (title, color = [15, 118, 110]) => {
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.rect(margin, y, contentWidth, 13, 'F');
+      doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
-      doc.text(title, margin + 6, y + 10);
-
-      if (badgeText) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.setTextColor(244, 63, 94);
-        doc.text(badgeText, pageWidth - margin - doc.getTextWidth(badgeText) - 6, y + 10);
-      }
-      y += 16;
+      doc.text(title, margin + 6, y + 9.5);
+      y += 15;
     };
 
-    // 1. EXECUTIVE SNAPSHOT & LVEF TRAJECTORY
-    drawBoxHeader('1. CLINICAL SNAPSHOT & LVEF TRAJECTORY', lvefTrend ? `LVEF: ${lvefTrend}` : '', [225, 29, 72]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(15, 23, 42);
-    const snapLines = doc.splitTextToSize(clinicalSnapshot || 'No clinical snapshot available.', contentWidth - 8);
-    doc.text(snapLines, margin + 4, y);
-    y += snapLines.length * 10.5 + 4;
-
-    // 2. 30-SECOND CARDIOLOGIST QUICK CONSULT (Telegraphic & Specific)
-    if (cardiologistQuickView.length > 0) {
-      drawBoxHeader('2. 30-SECOND CARDIOLOGIST QUICK CONSULT', '', [15, 118, 110]);
-      cardiologistQuickView.slice(0, 5).forEach(bullet => {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(30, 41, 59);
-        const bulletText = `• ${bullet.replace(/^(•|-|\*)\s*/, '')}`;
-        const bLines = doc.splitTextToSize(bulletText, contentWidth - 8);
-        doc.text(bLines, margin + 4, y);
-        y += bLines.length * 9.5 + 2;
-      });
-      y += 2;
-    }
-
-    // 3. EVIDENCE-BASED DIAGNOSES CLASSIFICATION (Specific & Short)
-    drawBoxHeader('3. EVIDENCE-BASED DIAGNOSES', '', [79, 70, 229]);
-    if (stronglySupported.length > 0) {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
-      doc.setTextColor(16, 185, 129);
-      doc.text('ESTABLISHED:', margin + 4, y);
-      doc.setFont('helvetica', 'normal');
+    const drawBullet = (text, indent = 4, isBold = false, color = [30, 41, 59]) => {
+      if (!text) return;
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
       doc.setFontSize(8);
-      doc.setTextColor(30, 41, 59);
-      const estText = stronglySupported.join('; ');
-      const eLines = doc.splitTextToSize(estText, contentWidth - 85);
-      doc.text(eLines, margin + 80, y);
-      y += eLines.length * 9.5 + 2;
+      doc.setTextColor(color[0], color[1], color[2]);
+      const cleanText = text.replace(/^(•|-|\*)\s*/, '');
+      const bulletStr = `• ${cleanText}`;
+      const lines = doc.splitTextToSize(bulletStr, contentWidth - indent);
+      doc.text(lines, margin + indent, y);
+      y += lines.length * 9 + 2;
+    };
+
+    // 1. DIAGNOSIS
+    drawSectionHeader('1. DIAGNOSIS (ESTABLISHED & SUPPORTED)', [225, 29, 72]);
+    if (stronglySupported.length > 0) {
+      stronglySupported.forEach(d => drawBullet(`Established: ${d}`, 4, true, [16, 185, 129]));
     }
     if (previouslyDocumented.length > 0) {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
-      doc.setTextColor(217, 119, 6);
-      doc.text('NEEDS CONFIRMATION:', margin + 4, y);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(51, 65, 85);
-      const prevText = previouslyDocumented.join('; ');
-      const pLines = doc.splitTextToSize(prevText, contentWidth - 110);
-      doc.text(pLines, margin + 110, y);
-      y += pLines.length * 9.5 + 2;
+      previouslyDocumented.forEach(d => drawBullet(`Needs Confirmation: ${d}`, 4, false, [217, 119, 6]));
     }
     if (uncertainUnsupported.length > 0) {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
-      doc.setTextColor(100, 116, 139);
-      doc.text('UNSUPPORTED:', margin + 4, y);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(100, 116, 139);
-      const unText = uncertainUnsupported.join('; ');
-      const uLines = doc.splitTextToSize(unText, contentWidth - 85);
-      doc.text(uLines, margin + 80, y);
-      y += uLines.length * 9.5 + 2;
+      uncertainUnsupported.forEach(d => drawBullet(`Uncertain: ${d}`, 4, false, [100, 116, 139]));
+    }
+    if (stronglySupported.length === 0 && previouslyDocumented.length === 0 && uncertainUnsupported.length === 0) {
+      drawBullet('No diagnosis documented in supplied records.', 4, false, [100, 116, 139]);
     }
     y += 2;
 
-    // 4. MOST LIKELY CURRENT MEDICATIONS
-    if (currentMedications.length > 0) {
-      drawBoxHeader('4. MOST LIKELY CURRENT MEDICATIONS', '', [16, 185, 129]);
-      const medItems = currentMedications.slice(0, 6).map(m => `${m.medicine}${m.dose ? ` ${m.dose}` : ''}`);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.setTextColor(15, 23, 42);
-      const medText = medItems.join('   •   ');
-      const mLines = doc.splitTextToSize(medText, contentWidth - 8);
-      doc.text(mLines, margin + 4, y);
-      y += mLines.length * 9.5 + 4;
+    // 2. INVESTIGATIONS (ECG -> ECHO -> TMT/CAG -> BLOODS)
+    drawSectionHeader('2. INVESTIGATIONS', [79, 70, 229]);
+
+    // A. ECG
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(79, 70, 229);
+    doc.text('[ECG]:', margin + 4, y);
+    y += 9;
+    if (ecgList.length > 0) {
+      ecgList.forEach(e => drawBullet(`${e.date || 'Date N/A'}: ${e.rhythm || 'Rhythm N/A'} — ${e.findings || 'No specific finding'}`, 8, false, [30, 41, 59]));
+    } else {
+      drawBullet('ECG tracing/report not available in supplied records.', 8, false, [100, 116, 139]);
     }
 
-    // 5. ANGIOGRAPHY (CAG) / PCI & RECENT LAB HIGHLIGHTS
-    drawBoxHeader('5. ANGIOGRAPHY (CAG) / PCI & RECENT LAB HIGHLIGHTS', '', [225, 29, 72]);
+    // B. ECHO
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(79, 70, 229);
+    doc.text('[ECHOCARDIOGRAPHY]:', margin + 4, y);
+    y += 9;
+    if (lvefTrend) drawBullet(`LVEF Trajectory: ${lvefTrend}`, 8, true, [225, 29, 72]);
+    if (echoList.length > 0) {
+      echoList.forEach(e => drawBullet(`${e.date || 'Date N/A'}: LVEF ${e.lvef || 'N/A'} | RWMA: ${e.rwma || 'None'} | Valve: ${e.valveDisease || 'Normal'}`, 8, false, [30, 41, 59]));
+    } else if (!lvefTrend) {
+      drawBullet('Echo report not available in supplied records.', 8, false, [100, 116, 139]);
+    }
+
+    // C. TMT / CAG / PCI
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(79, 70, 229);
+    doc.text('[TMT / CORONARY ANGIOGRAPHY (CAG) / PCI]:', margin + 4, y);
+    y += 9;
     if (cagPciList.length > 0) {
-      cagPciList.slice(0, 2).forEach(c => {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(30, 41, 59);
-        const cagText = `CAG (${c.date}): LM:${c.lm} | LAD:${c.lad} | LCX:${c.lcx} | RCA:${c.rca}  — PCI: ${c.pciDetails}`;
-        const cLines = doc.splitTextToSize(cagText, contentWidth - 8);
-        doc.text(cLines, margin + 4, y);
-        y += cLines.length * 9.5 + 2;
-      });
+      cagPciList.forEach(c => drawBullet(`CAG (${c.date || 'N/A'}): LM:${c.lm || 'N/A'} | LAD:${c.lad || 'N/A'} | LCX:${c.lcx || 'N/A'} | RCA:${c.rca || 'N/A'} — PCI: ${c.pciDetails || 'None'}`, 8, false, [30, 41, 59]));
     }
-    if (laboratoryData.length > 0) {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(71, 85, 105);
-      const labText = `Labs: ` + laboratoryData.slice(0, 6).map(l => `${l.parameter}: ${l.latestValue}`).join('  |  ');
-      const lLines = doc.splitTextToSize(labText, contentWidth - 8);
-      doc.text(lLines, margin + 4, y);
-      y += lLines.length * 9 + 3;
+    if (otherCardiacTests.length > 0) {
+      otherCardiacTests.forEach(t => drawBullet(`${t.testName} (${t.date || 'N/A'}): ${t.summary}`, 8, false, [30, 41, 59]));
+    }
+    if (cagPciList.length === 0 && otherCardiacTests.length === 0) {
+      drawBullet('No CAG/PCI or TMT reports available in supplied records.', 8, false, [100, 116, 139]);
     }
 
-    // 6. CONFLICTS & CRITICAL MISSING INFORMATION
+    // D. BLOODS (LAB DATA)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(79, 70, 229);
+    doc.text('[BLOODS / LABORATORY DATA]:', margin + 4, y);
+    y += 9;
+    if (laboratoryData.length > 0) {
+      laboratoryData.slice(0, 6).forEach(l => drawBullet(`${l.parameter}: ${l.latestValue} ${l.trend ? `(Trend: ${l.trend})` : ''}`, 8, false, [30, 41, 59]));
+    } else {
+      drawBullet('Laboratory blood data not available in supplied records.', 8, false, [100, 116, 139]);
+    }
+    y += 2;
+
+    // 3. CURRENT MEDICATIONS
+    drawSectionHeader('3. MOST LIKELY CURRENT MEDICATIONS', [16, 185, 129]);
+    if (currentMedications.length > 0) {
+      currentMedications.forEach(m => drawBullet(`${m.medicine} ${m.dose || ''} ${m.frequency || ''} — Indication: ${m.likelyIndication || 'N/A'} [Ref: ${m.evidence || 'N/A'}]`, 4, false, [30, 41, 59]));
+    } else {
+      drawBullet('Current medication list not available in supplied records.', 4, false, [100, 116, 139]);
+    }
+    y += 2;
+
+    // 4. CONFLICTS & MISSING INFORMATION
     if (conflictsAndDiscrepancies.length > 0 || missingInformation.length > 0) {
-      drawBoxHeader('6. CONFLICTS & CRITICAL MISSING GAPS', '', [217, 119, 6]);
-      if (conflictsAndDiscrepancies.length > 0) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(180, 83, 9);
-        const confText = `Discrepancies: ${conflictsAndDiscrepancies.slice(0, 2).join('; ')}`;
-        const cfLines = doc.splitTextToSize(confText, contentWidth - 8);
-        doc.text(cfLines, margin + 4, y);
-        y += cfLines.length * 9 + 2;
-      }
-      if (missingInformation.length > 0) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(190, 18, 60);
-        const missText = `Missing: ${missingInformation.slice(0, 3).join('; ')}`;
-        const msLines = doc.splitTextToSize(missText, contentWidth - 8);
-        doc.text(msLines, margin + 4, y);
-        y += msLines.length * 9 + 2;
-      }
+      drawSectionHeader('4. CONFLICTS & MISSING INFORMATION', [217, 119, 6]);
+      conflictsAndDiscrepancies.forEach(c => drawBullet(`Discrepancy: ${c}`, 4, false, [180, 83, 9]));
+      missingInformation.forEach(m => drawBullet(`Missing Gap: ${m}`, 4, false, [190, 18, 60]));
     }
 
     // Page Footer
     doc.setDrawColor(226, 232, 240);
-    doc.line(margin, pageHeight - 18, pageWidth - margin, pageHeight - 18);
+    doc.line(margin, pageHeight - 16, pageWidth - margin, pageHeight - 16);
     doc.setFontSize(7);
     doc.setTextColor(148, 163, 184);
     doc.setFont('helvetica', 'normal');
-    doc.text('AegisScan Cardiology AI — Evidence-Based 1-Page Clinical Brief (Confidential)', margin, pageHeight - 8);
+    doc.text('AegisScan Cardiology AI — Evidence-Based 1-Page Clinical Brief (Confidential)', margin, pageHeight - 6);
 
     doc.save(`Cardiology_1Page_Summary_${(metadata.patientName || "Patient").replace(/\s+/g, "_")}.pdf`);
   };
@@ -680,61 +647,125 @@ ${missingInformation.map(m => `* ${m}`).join('\n') || 'None'}
               </div>
             )}
 
-            {/* 2. ESTABLISHED MAJOR DIAGNOSES */}
+            {/* 1. ESTABLISHED MAJOR DIAGNOSES */}
             <div className="summary-card">
               <div className="summary-card-header" style={{ color: 'var(--color-accent)' }}>
                 <Stethoscope size={18} />
-                <span>2. ESTABLISHED MAJOR DIAGNOSES</span>
+                <span>1. DIAGNOSIS (ESTABLISHED & SUPPORTED)</span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {stronglySupported.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-success)', letterSpacing: '0.5px', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <CheckCircle2 size={14} /> Established / Strongly Supported
+                    </div>
+                    <ul style={{ paddingLeft: '1.2rem', fontSize: '0.875rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                      {stronglySupported.map((item, i) => <li key={i}>{parseLineContent(item)}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                {previouslyDocumented.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-warning)', letterSpacing: '0.5px', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Clock size={14} /> Needs Confirmation
+                    </div>
+                    <ul style={{ paddingLeft: '1.2rem', fontSize: '0.875rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                      {previouslyDocumented.map((item, i) => <li key={i}>{parseLineContent(item)}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                {uncertainUnsupported.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.5px', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <HelpCircle size={14} /> Uncertain / Unsupported
+                    </div>
+                    <ul style={{ paddingLeft: '1.2rem', fontSize: '0.875rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                      {uncertainUnsupported.map((item, i) => <li key={i}>{parseLineContent(item)}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 2. INVESTIGATIONS SUMMARY CARD */}
+            <div className="summary-card">
+              <div className="summary-card-header" style={{ color: 'var(--color-primary)' }}>
+                <Activity size={18} />
+                <span>2. INVESTIGATIONS (ECG → ECHO → TMT/CAG → BLOODS)</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {/* Strongly Supported */}
-                <div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-success)', letterSpacing: '0.5px', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <CheckCircle2 size={14} />
-                    Established / Strongly Supported
+                {/* A. ECG */}
+                <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--color-warning)', marginBottom: '0.35rem' }}>
+                    [ECG]
                   </div>
-                  {stronglySupported.length > 0 ? (
-                    <ul style={{ paddingLeft: '1.2rem', fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-                      {stronglySupported.map((item, i) => <li key={i}>{parseLineContent(item)}</li>)}
+                  {ecgList.length > 0 ? (
+                    <ul style={{ paddingLeft: '1.2rem', fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      {ecgList.map((ecg, i) => (
+                        <li key={i}><strong>{ecg.date}:</strong> {ecg.rhythm} — {ecg.findings}</li>
+                      ))}
                     </ul>
-                  ) : <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>None documented</div>}
+                  ) : <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>ECG tracing/report not available in supplied records.</div>}
                 </div>
 
-                {/* Previously Documented */}
-                <div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-warning)', letterSpacing: '0.5px', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <Clock size={14} />
-                    Previously Documented / Needs Confirmation
+                {/* B. ECHO */}
+                <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--color-primary)', marginBottom: '0.35rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>[ECHOCARDIOGRAPHY]</span>
+                    {lvefTrend && <span style={{ color: 'var(--color-danger)' }}>Trajectory: {lvefTrend}</span>}
                   </div>
-                  {previouslyDocumented.length > 0 ? (
-                    <ul style={{ paddingLeft: '1.2rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                      {previouslyDocumented.map((item, i) => <li key={i}>{parseLineContent(item)}</li>)}
+                  {echoList.length > 0 ? (
+                    <ul style={{ paddingLeft: '1.2rem', fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      {echoList.map((echo, i) => (
+                        <li key={i}><strong>{echo.date}:</strong> LVEF {echo.lvef} | RWMA: {echo.rwma || 'None'} | Valves: {echo.valveDisease || 'Normal'}</li>
+                      ))}
                     </ul>
-                  ) : <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>None documented</div>}
+                  ) : <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Echo report not available in supplied records.</div>}
                 </div>
 
-                {/* Uncertain / Unsupported */}
-                <div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.5px', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <HelpCircle size={14} />
-                    Uncertain / Unsupported
+                {/* C. TMT / CAG / PCI */}
+                <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--color-danger)', marginBottom: '0.35rem' }}>
+                    [TMT / CORONARY ANGIOGRAPHY (CAG) / PCI]
                   </div>
-                  {uncertainUnsupported.length > 0 ? (
-                    <ul style={{ paddingLeft: '1.2rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                      {uncertainUnsupported.map((item, i) => <li key={i}>{parseLineContent(item)}</li>)}
+                  {cagPciList.length > 0 || otherCardiacTests.length > 0 ? (
+                    <ul style={{ paddingLeft: '1.2rem', fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      {cagPciList.map((cag, i) => (
+                        <li key={i}><strong>CAG ({cag.date}):</strong> LM:{cag.lm} | LAD:{cag.lad} | LCX:{cag.lcx} | RCA:{cag.rca} — <strong>PCI:</strong> {cag.pciDetails}</li>
+                      ))}
+                      {otherCardiacTests.map((t, i) => (
+                        <li key={i}><strong>{t.testName} ({t.date}):</strong> {t.summary}</li>
+                      ))}
                     </ul>
-                  ) : <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>None documented</div>}
+                  ) : <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No CAG/PCI or TMT reports available in supplied records.</div>}
+                </div>
+
+                {/* D. BLOODS */}
+                <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--color-success)', marginBottom: '0.35rem' }}>
+                    [BLOODS / LABORATORY DATA]
+                  </div>
+                  {laboratoryData.length > 0 ? (
+                    <ul style={{ paddingLeft: '1.2rem', fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      {laboratoryData.map((lab, i) => (
+                        <li key={i}><strong>{lab.parameter}:</strong> {lab.latestValue} {lab.trend ? `(Trend: ${lab.trend})` : ''}</li>
+                      ))}
+                    </ul>
+                  ) : <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Laboratory blood data not available in supplied records.</div>}
                 </div>
               </div>
             </div>
 
-            {/* 7. MOST LIKELY CURRENT MEDICATIONS */}
+            {/* 3. MOST LIKELY CURRENT MEDICATIONS */}
             {currentMedications.length > 0 && (
               <div className="summary-card" style={{ padding: '1rem 0' }}>
                 <div className="summary-card-header" style={{ color: 'var(--color-success)', padding: '0 1.25rem 0.5rem 1.25rem' }}>
                   <Pill size={18} />
-                  <span>7. MOST LIKELY CURRENT MEDICATIONS</span>
+                  <span>3. MOST LIKELY CURRENT MEDICATIONS</span>
                 </div>
                 <div style={{ overflowX: 'auto', width: '100%' }}>
                   <table className="medical-table">
@@ -760,6 +791,24 @@ ${missingInformation.map(m => `* ${m}`).join('\n') || 'None'}
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+
+            {/* 4. CONFLICTS & MISSING INFORMATION */}
+            {(conflictsAndDiscrepancies.length > 0 || missingInformation.length > 0) && (
+              <div className="summary-card" style={{ borderLeft: '4px solid var(--color-warning)', background: 'rgba(245, 158, 11, 0.02)' }}>
+                <div className="summary-card-header" style={{ color: 'var(--color-warning)' }}>
+                  <AlertTriangle size={18} />
+                  <span>4. CONFLICTS & MISSING INFORMATION</span>
+                </div>
+                <ul style={{ paddingLeft: '1.2rem', fontSize: '0.875rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  {conflictsAndDiscrepancies.map((conf, i) => (
+                    <li key={i} style={{ color: 'var(--color-warning)' }}><strong>Discrepancy:</strong> {parseLineContent(conf)}</li>
+                  ))}
+                  {missingInformation.map((miss, i) => (
+                    <li key={i} style={{ color: '#fda4af' }}><strong>Missing Gap:</strong> {parseLineContent(miss)}</li>
+                  ))}
+                </ul>
               </div>
             )}
 
