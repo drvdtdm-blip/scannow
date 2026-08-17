@@ -248,151 +248,129 @@ ${missingInformation.map(m => `* ${m}`).join('\n') || 'None'}
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 40;
+    const margin = 36;
     const maxLineWidth = pageWidth - margin * 2;
-    let y = 40;
+    let y = 36;
 
-    const checkPageBreak = (neededHeight = 25) => {
+    const checkPageBreak = (neededHeight = 30) => {
       if (y + neededHeight > pageHeight - 45) {
         doc.addPage();
         y = 45;
       }
     };
 
-    // Header Banner
-    doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, pageWidth, 75, 'F');
+    // Header
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(1.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 16;
 
-    doc.setTextColor(244, 63, 94);
+    doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text('AegisScan Cardiology EHR Summary', margin, 32);
+    doc.setFontSize(14);
+    doc.text('AegisScan Cardiology EHR Summary', margin, y);
+    y += 14;
 
-    doc.setTextColor(148, 163, 184);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.text(`Patient: ${metadata.patientName || 'N/A'}  |  Age/Gender: ${metadata.patientAge || 'N/A'} / ${metadata.patientGender || 'N/A'}  |  Date: ${metadata.documentDate || 'N/A'}`, margin, 52);
+    doc.setTextColor(40, 40, 40);
+    doc.text(`Patient: ${metadata.patientName || 'N/A'}  |  Age/Sex: ${metadata.patientAge || 'N/A'} / ${metadata.patientGender || 'N/A'}  |  Date: ${metadata.documentDate || 'N/A'}`, margin, y);
+    y += 12;
 
-    y = 95;
+    doc.setLineWidth(0.75);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 20;
 
-    // Helper to print section header
-    const printSectionHeader = (title, color = [6, 182, 212]) => {
-      checkPageBreak(32);
-      doc.setFillColor(color[0], color[1], color[2]);
-      doc.rect(margin, y, 4, 15, 'F');
-      doc.setTextColor(15, 23, 42);
+    const printSectionHeader = (title) => {
+      checkPageBreak(35);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text(title, margin + 10, y + 12);
-      y += 24;
+      doc.setFontSize(10.5);
+      doc.setTextColor(0, 0, 0);
+      doc.text(title, margin, y);
+      y += 5;
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 16;
     };
 
-    // Helper to print lines with auto wrap
-    const printParagraph = (text, fontSize = 9, isBold = false, textColor = [51, 65, 85]) => {
+    const printParagraph = (text, fontSize = 9, isBold = false, indent = 0) => {
       if (!text) return;
       doc.setFont('helvetica', isBold ? 'bold' : 'normal');
       doc.setFontSize(fontSize);
-      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-      const lines = doc.splitTextToSize(text, maxLineWidth);
-      checkPageBreak(lines.length * (fontSize + 3) + 4);
-      doc.text(lines, margin, y);
-      y += lines.length * (fontSize + 3) + 4;
+      doc.setTextColor(0, 0, 0);
+      const lines = doc.splitTextToSize(text, maxLineWidth - indent);
+      checkPageBreak(lines.length * 13 + 6);
+      doc.text(lines, margin + indent, y);
+      y += lines.length * 13 + 6;
     };
 
-    // 1. CLINICAL SNAPSHOT
-    printSectionHeader('1. CLINICAL SNAPSHOT', [244, 63, 94]);
-    printParagraph(clinicalSnapshot, 10, true, [15, 23, 42]);
-    y += 6;
-
-    // 2. CARDIOLOGIST QUICK VIEW
-    if (cardiologistQuickView.length > 0) {
-      printSectionHeader('2. CARDIOLOGIST QUICK VIEW (30-60s Consult Summary)', [6, 182, 212]);
-      cardiologistQuickView.forEach(bullet => {
-        printParagraph(`• ${bullet}`, 9, false, [30, 41, 59]);
-      });
-      y += 6;
-    }
-
-    // 3. ESTABLISHED MAJOR DIAGNOSES
-    printSectionHeader('3. ESTABLISHED MAJOR DIAGNOSES', [99, 102, 241]);
+    // 1. DIAGNOSIS
+    printSectionHeader('1. DIAGNOSIS (ESTABLISHED & SUPPORTED)');
     if (stronglySupported.length > 0) {
-      printParagraph('[Established / Strongly Supported]', 9, true, [16, 185, 129]);
-      stronglySupported.forEach(d => printParagraph(`• ${d}`, 9, false, [30, 41, 59]));
+      stronglySupported.forEach(d => printParagraph(`• Established: ${d}`, 9, true));
     }
     if (previouslyDocumented.length > 0) {
-      printParagraph('[Previously Documented / Needs Confirmation]', 9, true, [245, 158, 11]);
-      previouslyDocumented.forEach(d => printParagraph(`• ${d}`, 9, false, [71, 85, 105]));
+      previouslyDocumented.forEach(d => printParagraph(`• Needs Confirmation: ${d}`, 9, false));
     }
     if (uncertainUnsupported.length > 0) {
-      printParagraph('[Uncertain / Unsupported]', 9, true, [100, 116, 139]);
-      uncertainUnsupported.forEach(d => printParagraph(`• ${d}`, 9, false, [100, 116, 139]));
+      uncertainUnsupported.forEach(d => printParagraph(`• Uncertain: ${d}`, 9, false));
     }
-    y += 6;
+    y += 8;
 
-    // 4. MOST LIKELY CURRENT MEDICATIONS
-    if (currentMedications.length > 0) {
-      printSectionHeader('4. MOST LIKELY CURRENT MEDICATIONS', [16, 185, 129]);
-      currentMedications.forEach(med => {
-        printParagraph(`• ${med.medicine} (${med.dose || ''} ${med.frequency || ''}) - Indication: ${med.likelyIndication || 'N/A'} [Ref: ${med.evidence || 'N/A'}]`, 9, false, [30, 41, 59]);
-      });
-      y += 6;
+    // 2. INVESTIGATIONS
+    printSectionHeader('2. INVESTIGATIONS');
+    printParagraph('[ECG]:', 9, true);
+    if (ecgList.length > 0) {
+      ecgList.forEach(e => printParagraph(`• ${e.date || 'N/A'}: ${e.rhythm || 'N/A'} — ${e.findings || 'N/A'}`, 8.5, false, 12));
+    } else {
+      printParagraph('• ECG tracing/report not available in supplied records.', 8.5, false, 12);
     }
+    y += 4;
 
-    // 5. CARDIOVASCULAR RISK FACTORS
-    if (riskFactors.length > 0) {
-      printSectionHeader('5. CARDIOVASCULAR RISK FACTORS', [6, 182, 212]);
-      const rfText = riskFactors.map(rf => `${rf.factor}: ${rf.status}`).join('  |  ');
-      printParagraph(rfText, 9, false, [51, 65, 85]);
-      y += 6;
+    printParagraph('[ECHOCARDIOGRAPHY]:', 9, true);
+    if (lvefTrend) printParagraph(`• LVEF Trajectory: ${lvefTrend}`, 8.5, true, 12);
+    if (echoList.length > 0) {
+      echoList.forEach(e => printParagraph(`• ${e.date || 'N/A'}: LVEF ${e.lvef || 'N/A'} | RWMA: ${e.rwma || 'None'} | Valves: ${e.valveDisease || 'Normal'}`, 8.5, false, 12));
     }
+    y += 4;
 
-    // 6. CARDIOVASCULAR HISTORY
-    if (cardiovascularHistory.length > 0) {
-      printSectionHeader('6. CARDIOVASCULAR HISTORY', [244, 63, 94]);
-      cardiovascularHistory.forEach(h => printParagraph(`• ${h}`, 9, false, [30, 41, 59]));
-      y += 6;
+    printParagraph('[CORONARY ANGIOGRAPHY (CAG) / PCI / TMT]:', 9, true);
+    if (cagPciList.length > 0) {
+      cagPciList.forEach(c => printParagraph(`• CAG (${c.date || 'N/A'}): LM:${c.lm || 'N/A'} | LAD:${c.lad || 'N/A'} | LCX:${c.lcx || 'N/A'} | RCA:${c.rca || 'N/A'} — PCI: ${c.pciDetails || 'None'}`, 8.5, false, 12));
     }
-
-    // 7. CLINICAL TIMELINE
-    if (clinicalTimeline.length > 0) {
-      printSectionHeader('7. CLINICAL TIMELINE', [6, 182, 212]);
-      clinicalTimeline.forEach(t => {
-        printParagraph(`[${t.period}]`, 9, true, [6, 182, 212]);
-        t.events.forEach(e => printParagraph(`   - ${e}`, 8.5, false, [51, 65, 85]));
-      });
-      y += 6;
+    if (otherCardiacTests.length > 0) {
+      otherCardiacTests.forEach(t => printParagraph(`• ${t.testName} (${t.date || 'N/A'}): ${t.summary}`, 8.5, false, 12));
     }
+    y += 4;
 
-    // 8. IMPORTANT INVESTIGATIONS
-    printSectionHeader('8. IMPORTANT INVESTIGATIONS (Echo, CAG/PCI, ECG)', [99, 102, 241]);
-    if (lvefTrend) printParagraph(`LVEF Trend: ${lvefTrend}`, 9.5, true, [15, 23, 42]);
-    echoList.forEach(e => printParagraph(`• Echo (${e.date}): LVEF ${e.lvef} | RWMA: ${e.rwma} | Valve: ${e.valveDisease}`, 8.5, false, [51, 65, 85]));
-    cagPciList.forEach(c => printParagraph(`• CAG (${c.date}): LM:${c.lm}, LAD:${c.lad}, LCX:${c.lcx}, RCA:${c.rca} | PCI: ${c.pciDetails}`, 8.5, false, [51, 65, 85]));
-    ecgList.forEach(e => printParagraph(`• ECG (${e.date}): ${e.rhythm} - ${e.findings}`, 8.5, false, [51, 65, 85]));
-    y += 6;
-
-    // 9. IMPORTANT LABORATORY DATA
+    printParagraph('[BLOODS / LABORATORY DATA]:', 9, true);
     if (laboratoryData.length > 0) {
-      printSectionHeader('9. IMPORTANT LABORATORY DATA & TRENDS', [6, 182, 212]);
-      laboratoryData.forEach(l => printParagraph(`• ${l.parameter}: ${l.latestValue} (Trend: ${l.trend || 'N/A'})`, 8.5, false, [51, 65, 85]));
-      y += 6;
+      laboratoryData.forEach(l => printParagraph(`• ${l.parameter}: ${l.latestValue} ${l.trend ? `(Trend: ${l.trend})` : ''}`, 8.5, false, 12));
     }
+    y += 8;
 
-    // 10. CONFLICTS & MISSING INFORMATION
+    // 3. MEDICATIONS
+    printSectionHeader('3. MOST LIKELY CURRENT MEDICATIONS');
+    if (currentMedications.length > 0) {
+      currentMedications.forEach(m => printParagraph(`• ${m.medicine} ${m.dose || ''} ${m.frequency || ''} — Indication: ${m.likelyIndication || 'N/A'} [Ref: ${m.evidence || 'N/A'}]`, 9, false));
+    }
+    y += 8;
+
+    // 4. CONFLICTS & MISSING INFORMATION
     if (conflictsAndDiscrepancies.length > 0 || missingInformation.length > 0) {
-      printSectionHeader('10. CONFLICTS & MISSING INFORMATION', [245, 158, 11]);
-      conflictsAndDiscrepancies.forEach(c => printParagraph(`• Conflict: ${c}`, 8.5, false, [180, 83, 9]));
-      missingInformation.forEach(m => printParagraph(`• Missing: ${m}`, 8.5, false, [225, 29, 72]));
-      y += 6;
+      printSectionHeader('4. CONFLICTS & MISSING INFORMATION');
+      conflictsAndDiscrepancies.forEach(c => printParagraph(`• Discrepancy: ${c}`, 8.5, false));
+      missingInformation.forEach(m => printParagraph(`• Missing Gap: ${m}`, 8.5, false));
     }
 
-    // Page Numbers Footer
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
+      doc.setLineWidth(0.5);
+      doc.line(margin, pageHeight - 24, pageWidth - margin, pageHeight - 24);
       doc.setFontSize(8);
-      doc.setTextColor(148, 163, 184);
-      doc.text(`AegisScan Cardiology AI Report - Page ${i} of ${totalPages}`, pageWidth - margin - 140, pageHeight - 15);
+      doc.setTextColor(60, 60, 60);
+      doc.text(`AegisScan Cardiology AI Report - Page ${i} of ${totalPages}`, pageWidth - margin - 140, pageHeight - 12);
     }
 
     doc.save(`Cardiology_Full_Summary_${(metadata.patientName || "Patient").replace(/\s+/g, "_")}.pdf`);
@@ -402,146 +380,152 @@ ${missingInformation.map(m => `* ${m}`).join('\n') || 'None'}
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth(); // 595.28 pt
     const pageHeight = doc.internal.pageSize.getHeight(); // 841.89 pt
-    const margin = 24;
+    const margin = 32;
     const contentWidth = pageWidth - margin * 2;
-    let y = 18;
+    let y = 30;
 
-    // Header Banner
-    doc.setFillColor(15, 23, 42);
-    doc.rect(margin, y, contentWidth, 38, 'F');
-    doc.setFillColor(244, 63, 94);
-    doc.rect(margin, y, 4, 38, 'F');
+    // Pure Black Header Line Accent
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(1.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 14;
 
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('CARDIOLOGY CLINICAL REVIEW — 1-PAGE SUMMARY', margin + 10, y + 14);
+    doc.setFontSize(13);
+    doc.text('CARDIOLOGY CLINICAL REVIEW — 1-PAGE SUMMARY', margin, y);
+    y += 14;
 
-    doc.setTextColor(148, 163, 184);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text(`Patient: ${metadata.patientName || 'N/A'}  |  Age/Sex: ${metadata.patientAge || 'N/A'} / ${metadata.patientGender || 'N/A'}  |  Date: ${metadata.documentDate || 'N/A'}`, margin + 10, y + 28);
+    doc.setFontSize(8.5);
+    doc.setTextColor(40, 40, 40);
+    doc.text(`Patient: ${metadata.patientName || 'N/A'}   |   Age/Sex: ${metadata.patientAge || 'N/A'} / ${metadata.patientGender || 'N/A'}   |   Date: ${metadata.documentDate || 'N/A'}`, margin, y);
+    y += 12;
 
-    y += 44;
+    doc.setLineWidth(0.75);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 18;
 
-    const drawSectionHeader = (title, color = [15, 118, 110]) => {
-      doc.setFillColor(color[0], color[1], color[2]);
-      doc.rect(margin, y, contentWidth, 13, 'F');
-      doc.setTextColor(255, 255, 255);
+    const drawSectionHeader = (title) => {
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.text(title, margin + 6, y + 9.5);
-      y += 15;
+      doc.setFontSize(9.5);
+      doc.setTextColor(0, 0, 0);
+      doc.text(title, margin, y);
+      y += 4;
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 14;
     };
 
-    const drawBullet = (text, indent = 4, isBold = false, color = [30, 41, 59]) => {
+    const drawBullet = (text, isBold = false, indent = 8) => {
       if (!text) return;
       doc.setFont('helvetica', isBold ? 'bold' : 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(color[0], color[1], color[2]);
+      doc.setFontSize(8.5);
+      doc.setTextColor(0, 0, 0);
       const cleanText = text.replace(/^(•|-|\*)\s*/, '');
-      const bulletStr = `• ${cleanText}`;
+      const bulletStr = `•  ${cleanText}`;
       const lines = doc.splitTextToSize(bulletStr, contentWidth - indent);
       doc.text(lines, margin + indent, y);
-      y += lines.length * 9 + 2;
+      y += lines.length * 11.5 + 4; // Uncongested line height
     };
 
     // 1. DIAGNOSIS
-    drawSectionHeader('1. DIAGNOSIS (ESTABLISHED & SUPPORTED)', [225, 29, 72]);
+    drawSectionHeader('1. DIAGNOSIS (ESTABLISHED & SUPPORTED)');
     if (stronglySupported.length > 0) {
-      stronglySupported.forEach(d => drawBullet(`Established: ${d}`, 4, true, [16, 185, 129]));
+      stronglySupported.forEach(d => drawBullet(`Established: ${d}`, true));
     }
     if (previouslyDocumented.length > 0) {
-      previouslyDocumented.forEach(d => drawBullet(`Needs Confirmation: ${d}`, 4, false, [217, 119, 6]));
+      previouslyDocumented.forEach(d => drawBullet(`Needs Confirmation: ${d}`, false));
     }
     if (uncertainUnsupported.length > 0) {
-      uncertainUnsupported.forEach(d => drawBullet(`Uncertain: ${d}`, 4, false, [100, 116, 139]));
+      uncertainUnsupported.forEach(d => drawBullet(`Uncertain: ${d}`, false));
     }
     if (stronglySupported.length === 0 && previouslyDocumented.length === 0 && uncertainUnsupported.length === 0) {
-      drawBullet('No diagnosis documented in supplied records.', 4, false, [100, 116, 139]);
+      drawBullet('No diagnosis documented in supplied records.', false);
     }
-    y += 2;
+    y += 6;
 
-    // 2. INVESTIGATIONS (ECG -> ECHO -> TMT/CAG -> BLOODS)
-    drawSectionHeader('2. INVESTIGATIONS', [79, 70, 229]);
+    // 2. INVESTIGATIONS
+    drawSectionHeader('2. INVESTIGATIONS');
 
     // A. ECG
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(79, 70, 229);
+    doc.setFontSize(8.5);
+    doc.setTextColor(0, 0, 0);
     doc.text('[ECG]:', margin + 4, y);
-    y += 9;
+    y += 12;
     if (ecgList.length > 0) {
-      ecgList.forEach(e => drawBullet(`${e.date || 'Date N/A'}: ${e.rhythm || 'Rhythm N/A'} — ${e.findings || 'No specific finding'}`, 8, false, [30, 41, 59]));
+      ecgList.forEach(e => drawBullet(`${e.date || 'Date N/A'}: ${e.rhythm || 'Rhythm N/A'} — ${e.findings || 'No specific finding'}`, false, 12));
     } else {
-      drawBullet('ECG tracing/report not available in supplied records.', 8, false, [100, 116, 139]);
+      drawBullet('ECG tracing/report not available in supplied records.', false, 12);
     }
 
     // B. ECHO
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(79, 70, 229);
+    doc.setFontSize(8.5);
+    doc.setTextColor(0, 0, 0);
     doc.text('[ECHOCARDIOGRAPHY]:', margin + 4, y);
-    y += 9;
-    if (lvefTrend) drawBullet(`LVEF Trajectory: ${lvefTrend}`, 8, true, [225, 29, 72]);
+    y += 12;
+    if (lvefTrend) drawBullet(`LVEF Trajectory: ${lvefTrend}`, true, 12);
     if (echoList.length > 0) {
-      echoList.forEach(e => drawBullet(`${e.date || 'Date N/A'}: LVEF ${e.lvef || 'N/A'} | RWMA: ${e.rwma || 'None'} | Valve: ${e.valveDisease || 'Normal'}`, 8, false, [30, 41, 59]));
+      echoList.forEach(e => drawBullet(`${e.date || 'Date N/A'}: LVEF ${e.lvef || 'N/A'} | RWMA: ${e.rwma || 'None'} | Valve: ${e.valveDisease || 'Normal'}`, false, 12));
     } else if (!lvefTrend) {
-      drawBullet('Echo report not available in supplied records.', 8, false, [100, 116, 139]);
+      drawBullet('Echo report not available in supplied records.', false, 12);
     }
 
     // C. TMT / CAG / PCI
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(79, 70, 229);
+    doc.setFontSize(8.5);
+    doc.setTextColor(0, 0, 0);
     doc.text('[TMT / CORONARY ANGIOGRAPHY (CAG) / PCI]:', margin + 4, y);
-    y += 9;
+    y += 12;
     if (cagPciList.length > 0) {
-      cagPciList.forEach(c => drawBullet(`CAG (${c.date || 'N/A'}): LM:${c.lm || 'N/A'} | LAD:${c.lad || 'N/A'} | LCX:${c.lcx || 'N/A'} | RCA:${c.rca || 'N/A'} — PCI: ${c.pciDetails || 'None'}`, 8, false, [30, 41, 59]));
+      cagPciList.forEach(c => drawBullet(`CAG (${c.date || 'N/A'}): LM:${c.lm || 'N/A'} | LAD:${c.lad || 'N/A'} | LCX:${c.lcx || 'N/A'} | RCA:${c.rca || 'N/A'} — PCI: ${c.pciDetails || 'None'}`, false, 12));
     }
     if (otherCardiacTests.length > 0) {
-      otherCardiacTests.forEach(t => drawBullet(`${t.testName} (${t.date || 'N/A'}): ${t.summary}`, 8, false, [30, 41, 59]));
+      otherCardiacTests.forEach(t => drawBullet(`${t.testName} (${t.date || 'N/A'}): ${t.summary}`, false, 12));
     }
     if (cagPciList.length === 0 && otherCardiacTests.length === 0) {
-      drawBullet('No CAG/PCI or TMT reports available in supplied records.', 8, false, [100, 116, 139]);
+      drawBullet('No CAG/PCI or TMT reports available in supplied records.', false, 12);
     }
 
-    // D. BLOODS (LAB DATA)
+    // D. BLOODS
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(79, 70, 229);
+    doc.setFontSize(8.5);
+    doc.setTextColor(0, 0, 0);
     doc.text('[BLOODS / LABORATORY DATA]:', margin + 4, y);
-    y += 9;
+    y += 12;
     if (laboratoryData.length > 0) {
-      laboratoryData.slice(0, 6).forEach(l => drawBullet(`${l.parameter}: ${l.latestValue} ${l.trend ? `(Trend: ${l.trend})` : ''}`, 8, false, [30, 41, 59]));
+      laboratoryData.slice(0, 6).forEach(l => drawBullet(`${l.parameter}: ${l.latestValue} ${l.trend ? `(Trend: ${l.trend})` : ''}`, false, 12));
     } else {
-      drawBullet('Laboratory blood data not available in supplied records.', 8, false, [100, 116, 139]);
+      drawBullet('Laboratory blood data not available in supplied records.', false, 12);
     }
-    y += 2;
+    y += 6;
 
     // 3. CURRENT MEDICATIONS
-    drawSectionHeader('3. MOST LIKELY CURRENT MEDICATIONS', [16, 185, 129]);
+    drawSectionHeader('3. MOST LIKELY CURRENT MEDICATIONS');
     if (currentMedications.length > 0) {
-      currentMedications.forEach(m => drawBullet(`${m.medicine} ${m.dose || ''} ${m.frequency || ''} — Indication: ${m.likelyIndication || 'N/A'} [Ref: ${m.evidence || 'N/A'}]`, 4, false, [30, 41, 59]));
+      currentMedications.forEach(m => drawBullet(`${m.medicine} ${m.dose || ''} ${m.frequency || ''} — Indication: ${m.likelyIndication || 'N/A'} [Ref: ${m.evidence || 'N/A'}]`, false));
     } else {
-      drawBullet('Current medication list not available in supplied records.', 4, false, [100, 116, 139]);
+      drawBullet('Current medication list not available in supplied records.', false);
     }
-    y += 2;
+    y += 6;
 
     // 4. CONFLICTS & MISSING INFORMATION
     if (conflictsAndDiscrepancies.length > 0 || missingInformation.length > 0) {
-      drawSectionHeader('4. CONFLICTS & MISSING INFORMATION', [217, 119, 6]);
-      conflictsAndDiscrepancies.forEach(c => drawBullet(`Discrepancy: ${c}`, 4, false, [180, 83, 9]));
-      missingInformation.forEach(m => drawBullet(`Missing Gap: ${m}`, 4, false, [190, 18, 60]));
+      drawSectionHeader('4. CONFLICTS & MISSING INFORMATION');
+      conflictsAndDiscrepancies.forEach(c => drawBullet(`Discrepancy: ${c}`, false));
+      missingInformation.forEach(m => drawBullet(`Missing Gap: ${m}`, false));
     }
 
     // Page Footer
-    doc.setDrawColor(226, 232, 240);
-    doc.line(margin, pageHeight - 16, pageWidth - margin, pageHeight - 16);
-    doc.setFontSize(7);
-    doc.setTextColor(148, 163, 184);
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.5);
+    doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+    doc.setFontSize(7.5);
+    doc.setTextColor(60, 60, 60);
     doc.setFont('helvetica', 'normal');
-    doc.text('AegisScan Cardiology AI — Evidence-Based 1-Page Clinical Brief (Confidential)', margin, pageHeight - 6);
+    doc.text('AegisScan Cardiology AI — Evidence-Based 1-Page Clinical Brief (Confidential)', margin, pageHeight - 8);
 
     doc.save(`Cardiology_1Page_Summary_${(metadata.patientName || "Patient").replace(/\s+/g, "_")}.pdf`);
   };
